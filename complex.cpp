@@ -135,17 +135,20 @@ int main()
         Complex b_compl = {b, bi};
         Complex result = {0, 0};
 
-        if (selection == 1)
+        switch (selection)
         {
+        case 1:
             result = a_compl + b_compl;
-        }
-        if (selection == 2)
-        {
+            break;
+        case 2:
             result = a_compl - b_compl;
-        }
-        if (selection == 3)
-        {
+            break;
+        case 3:
             result = a_compl * b_compl;
+            break;
+        default:
+            return EXIT_FAILURE;
+            break;
         }
 
         std::cout << "Reale: " << result.real() << " Imag: " << result.imag() << std::endl;
@@ -166,14 +169,20 @@ int main()
 
         Complex a_compl = {a, ai};
         Complex result = {0, 0};
-        if (selection == 4)
+
+        switch (selection)
         {
+        case 4:
             result = {norm(a_compl), 0};
-        }
-        if (selection == 5)
-        {
+            break;
+        case 5:
             result = conjugates(a_compl);
+            break;
+        default:
+            return EXIT_FAILURE;
+            break;
         }
+
         std::cout << "Reale: " << result.real() << " Imag: " << result.imag() << std::endl;
         return 0;
     }

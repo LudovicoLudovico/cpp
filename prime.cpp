@@ -4,10 +4,11 @@
 
 std::vector<int> is_prime(int num)
 {
+
     if (num < 0)
         num *= -1;
 
-    std::vector<int> result = {0, 1};
+    std::vector<int> result = {1, 1};
     if (num < 4)
     {
         return result;
@@ -19,7 +20,7 @@ std::vector<int> is_prime(int num)
         {
             if (num % counter == 0)
             {
-                return {1, counter};
+                return {0, counter};
             }
             ++counter;
         }
@@ -33,10 +34,15 @@ int get_closest_prime(int num)
     int range = 1;
     while (true)
     {
-        if (is_prime(num + range)[0])
-            return num + range;
-        if (is_prime(num - range)[0])
-            return num - range;
+        int up = num + range;
+        int down = num - range;
+
+        if (is_prime(up)[0])
+            return up;
+        if (is_prime(down)[0])
+            return down;
+
+        ++range;
     }
     return 0;
 }
@@ -53,7 +59,7 @@ int main()
     }
 
     std::vector<int> result = is_prime(num);
-    if (result[0] == 0)
+    if (result[0] == 1)
     {
         std::cout << "It's prime\n";
     }

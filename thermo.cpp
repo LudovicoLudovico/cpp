@@ -3,73 +3,61 @@
 #include <math.h>
 
 // Calculate mean
-double mean(std::vector<double> &data)
+double mean(std::vector<double> &vect)
 {
     double sum;
-
-    for (int i = 0; i < data.size(); i++)
+    int i = 0;
+    for (auto &num : vect)
     {
-        sum += data[i];
+        sum += num;
+        ++i;
     }
-    return (sum / data.size());
+
+    return (sum / i);
+}
+
+std::vector<double> get_max_min(std::vector<double> &vect)
+{
+    double max;
+    double min;
+    int i = 0;
+    for (auto &num : vect)
+    {
+        if (i == 0)
+        {
+            max = num;
+            min = num;
+        }
+        else
+        {
+            if (num > max)
+            {
+                max = num;
+            }
+
+            if (num < min)
+            {
+                min = num;
+            }
+        }
+        ++i;
+    }
+
+    return {max, min};
 }
 
 double interval_center(std::vector<double> &vect)
 {
-    double max;
-    double min;
+    std::vector<double> result = get_max_min(vect);
 
-    for (int i = 0; i < vect.size(); i++)
-    {
-        if (i == 0)
-        {
-            max = vect[i];
-            min = vect[i];
-        }
-        else
-        {
-            if (vect[i] > max)
-            {
-                max = vect[i];
-            }
-
-            if (vect[i] < min)
-            {
-                min = vect[i];
-            }
-        }
-    }
-
-    return ((max + min) / 2);
+    return ((result[0] + result[1]) / 2);
 }
 
 double partial_dispertion(std::vector<double> &vect)
 {
-    double max;
-    double min;
+    std::vector<double> result = get_max_min(vect);
 
-    for (int i = 0; i < vect.size(); i++)
-    {
-        if (i == 0)
-        {
-            max = vect[i];
-            min = vect[i];
-        }
-        else
-        {
-            if (vect[i] > max)
-            {
-                max = vect[i];
-            }
-
-            if (vect[i] < min)
-            {
-                min = vect[i];
-            }
-        }
-    }
-
-    return ((max - min) / 2);
+    return ((result[0] - result[1]) / 2);
 }
 
 double standard_deviation(std::vector<double> &vect)
@@ -77,14 +65,14 @@ double standard_deviation(std::vector<double> &vect)
     double calculated_mean = mean(vect);
 
     double sum_of_difference;
-    for (int i = 0; i < vect.size(); i++)
+    int i;
+    for (auto &num : vect)
     {
-        sum_of_difference += (vect[i] - calculated_mean) * (vect[i] - calculated_mean);
+        sum_of_difference += (num - calculated_mean) * (num - calculated_mean);
+        ++i;
     }
 
-    double deviation = sqrt(sum_of_difference / (vect.size() - 1));
-
-    return deviation;
+    return sqrt(sum_of_difference / (vect.size() - 1));
 }
 
 double variance(std::vector<double> &vect)
@@ -111,30 +99,36 @@ int main()
         data.push_back(user_data);
     }
 
-    if (user_choice == 1)
+    double result;
+    std::string operation = "";
+    switch (user_choice)
     {
-        double calculated_mean = mean(data);
-        std::cout << "The mean of your data set is: " << calculated_mean << std::endl;
+    case 1:
+        result = mean(data);
+        operation = "mean";
+        break;
+    case 2:
+        result = interval_center(data);
+        operation = "center of the interval";
+        break;
+    case 3:
+        result = partial_dispertion(data);
+        operation = "partial dispertion";
+        break;
+    case 4:
+        result = standard_deviation(data);
+        operation = "standard deviation";
+        break;
+    case 5:
+        result = variance(data);
+        operation = "variance";
+        break;
+    default:
+        return EXIT_FAILURE;
+        break;
     }
-    else if (user_choice == 2)
-    {
-        double calculated_interval = interval_center(data);
-        std::cout << "The center of the interval is: " << calculated_interval << std::endl;
-    }
-    else if (user_choice == 3)
-    {
-        double calculated_partial = partial_dispertion(data);
-        std::cout << "The partial dispertion is: " << calculated_partial << std::endl;
-    }
-    else if (user_choice == 4)
-    {
-        double deviation = standard_deviation(data);
-        std::cout << "The standard deviation is: " << deviation << std::endl;
-    }
-    else if (user_choice == 5)
-    {
-        double calculated_varicance = variance(data);
-        std::cout << "The variance of your data set is:  " << calculated_varicance << std::endl;
-    }
+
+    std::cout << "The " << operation << " of your data set is:  " << result << std::endl;
+
     return 0;
 }
