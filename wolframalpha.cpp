@@ -1,200 +1,125 @@
-#include <cmath>
-#include <cstdlib>
 #include <iostream>
+#include <string>
+#include <vector>
+#include <cstdlib>
+#include <cmath>
+#include <algorithm>
 
-class Complex
+int determinant(std::vector<int> const &mat, int size)
 {
-private:
-    double r;
-    double i;
-
-public:
-    Complex(double a, double b) : r{a}, i{b} {};
-    double real() { return r; };
-    double imag() { return i; };
-};
-
-class Matrix2
-{
-private:
-    double a11;
-    double a12;
-    double a21;
-    double a22;
-
-public:
-    Matrix2(double oo, double ot, double to, double tt)
-        : a11{oo}, a12{ot}, a21{to}, a22{tt} {};
-    double ga11() { return a11; };
-    double ga12() { return a12; };
-    double ga21() { return a21; };
-    double ga22() { return a22; };
-};
-
-Matrix2 operator+(Matrix2 a, Matrix2 b)
-{
-    return Matrix2{a.ga11() + b.ga11(), a.ga12() + b.ga12(), a.ga21() + b.ga21(), a.ga22() + b.ga22()};
-}
-Matrix2 operator-(Matrix2 a, Matrix2 b)
-{
-    return Matrix2{a.ga11() - b.ga11(), a.ga12() - b.ga12(), a.ga21() - b.ga21(), a.ga22() - b.ga22()};
-}
-Matrix2 operator*(Matrix2 a, Matrix2 b)
-{
-    return Matrix2{a.ga11() * b.ga11() + a.ga12() * b.ga21(), a.ga11() * b.ga12() + a.ga12() * b.ga22(), a.ga21() * b.ga11() + a.ga22() * b.ga21(), a.ga21() * b.ga12() + a.ga22() * b.ga22()};
-}
-
-// Defining Solution Class that combines two complex
-class Solution
-{
-private:
-    double a;
-    double ai;
-    double b;
-    double bi;
-
-public:
-    Solution(Complex x1, Complex x2)
-        : a{x1.real()}, ai{x1.imag()}, b{x2.real()}, bi{x2.imag()} {}
-    Complex first() { return Complex{a, ai}; };
-    Complex second() { return Complex{b, bi}; };
-};
-
-// Calculates the solution of a second grade equation and return both solutions
-// in a Solution type
-Solution calculate_solution(double a, double b, double c)
-{
-    bool hasComplexSol = false;
-    double delta = (b * b) + (-4 * a * c);
-    if (delta < 0)
+    if (size == 2)
     {
-        delta *= -1;
-        hasComplexSol = true;
+        return mat[0] * mat[3] - mat[1] * mat[2];
     }
-
-    if (hasComplexSol)
+    int det = 0;
+    for (int i = 0; i < size; i++)
     {
-        Complex x1 = {(b * -1 / (2 * a)), sqrt(delta) / (2 * a)};
-        Complex x2 = {(b * -1 / (2 * a)), (sqrt(delta) / (2 * a)) * -1};
-        Solution sol = {x1, x2};
-        return sol;
+        std::vector<int> copy = mat;
+        std::vector<int> result;
+        copy.erase(copy.begin(), copy.begin() + (size));
+        // mat[i] * (-1)^(i + 2) * determinant()
+
+        // {4,5,6,7,8,9}
+        //    -     -
+        int counter = i;
+        for (int j = 0; j < copy.size(); j++)
+        {
+            if (counter == j)
+            {
+                counter += size;
+                continue;
+            }
+
+            result.push_back(copy[j]);
+        }
+
+        det += mat[i] * std::pow(-1, (i + 2)) * determinant(result, size - 1);
     }
-    else
-    {
-        Complex x1 = {((b * -1) + sqrt(delta)) / (2 * a), 0};
-        Complex x2 = {((b * -1) - sqrt(delta)) / (2 * a), 0};
-        Solution sol = {x1, x2};
-        return sol;
-    }
+    return det;
 }
-
-double determinant(Matrix2 &mat)
-{
-    return mat.ga11() * mat.ga22() - mat.ga12() * mat.ga21();
-}
-
-Solution autovalues(Matrix2 &mat)
-{
-    double a = 1;
-    double b = mat.ga11() * -1. + mat.ga22() * -1.;
-    double c = mat.ga11() * mat.ga22() - mat.ga12() * mat.ga21();
-
-    Solution sol = calculate_solution(a, b, c);
-    return sol;
-}
-
-double trace(Matrix2 &mat) { return mat.ga11() + mat.ga22(); }
 
 int main()
 {
-    std::cout << '\n';
-    std::cout << "---------------------------------------------- \n";
-    std::cout << "                  MATRICI 2x2                  \n";
-    std::cout << "---------------------------------------------- \n";
-    std::cout << '\n';
+    std::cout << "\n---------- INSERT MATRIX ----------\n";
 
-    std::cout << "Select an operation: \n (1) - Sum \n (2) - Substract \n (3) - "
-                 "Multiply \n (4) - Get all properties of a matrix \n";
+    //= "{1,2,3,5}{4,5,6,8}{7,8,9,10}{1,-3,5,6}"
+    std::string input;
+    input.erase(std::remove_if(input.begin(), input.end(), isspace), input.end());
+    std::cout << input;
+    std::getline(std::cin, input);
 
-    int selection;
-    std::cin >> selection;
+    std::vector<int> del;
+    int row_num = 0;
+    int col_num = 0;
 
-    if (std::cin.fail() || selection < 1 || selection > 4)
+    // Finding dels
+    for (int i = 0; i < input.size(); i++)
     {
-        std::cerr << "Invalid input\n";
+        if (input[i] == '{' || input[i] == '}' || input[i] == ',')
+        {
+            if (input[i] == '}')
+                row_num++;
+            if (input[i] == ',' || input[i] == '}')
+                col_num++;
+            del.push_back(i);
+        }
+    }
+    int col_per_row = col_num / row_num;
+    std::vector<int> mat;
+
+    std::vector<int> curr_row;
+    for (int i = 0; i < del.size() - 1; i++)
+    {
+        if (del[i + 1] - del[i] == 1)
+            continue;
+        std::string sub = input.substr(del[i], del[i + 1] - del[i]);
+        sub = sub.substr(1, sub.size() - 1);
+        mat.push_back(std::stoi(sub));
+    }
+
+    //
+    // Displaying Matrix Dimensions and error messages
+    //
+    std::cout << "\n--- Matrix Dimensions ---\n";
+    std::cout << row_num << 'x' << col_per_row << '\n';
+
+    if (row_num != col_per_row)
+    {
+        std::cout << "Can't calculate determinant\n";
+        std::cout << "Can't calculate trace\n";
         return EXIT_FAILURE;
     }
-    if (selection < 4)
+
+    //
+    // Printing Matrix
+    //
+    std::cout << "\n--- Matrix ---\n";
+    int counter = 0;
+    for (int i = 0; i < mat.size(); i++)
     {
-        std::cout << "Insert the first matrix (a11, a12, a21, a22): \n";
-        double a11, a12, a21, a22;
-        std::cin >> a11 >> a12 >> a21 >> a22;
-
-        std::cout << "Insert the second matrix (b11, b12, b21, b22): \n";
-        double b11, b12, b21, b22;
-        std::cin >> b11 >> b12 >> b21 >> b22;
-
-        Matrix2 first = {a11,
-                         a12,
-                         a21,
-                         a22};
-        Matrix2 second = {b11,
-                          b12,
-                          b21,
-                          b22};
-        Matrix2 result = {0, 0, 0, 0};
-
-        switch (selection)
+        std::cout << "|    " << mat[i] << "     |";
+        ++counter;
+        if (counter == col_per_row)
         {
-        case 1:
-            result = first + second;
-            break;
-        case 2:
-            result = first - second;
-            break;
-        case 3:
-            result = first * second;
+            std::cout << '\n';
+            counter = 0;
         }
-
-        std::cout << result.ga11() << " | " << result.ga12() << std::endl
-                  << result.ga21() << " | " << result.ga22() << std::endl;
-        return EXIT_SUCCESS;
     }
 
-    if (selection == 4)
+    //
+    // Calculating Trace
+    //
+    int trace = mat[0];
+    for (int i = 1; i < row_num; i++)
     {
-        std::cout << "Insert the matrix (a11, a12, a21, a22): \n";
-        double a11, a12, a21, a22;
-        std::cin >> a11 >> a12 >> a21 >> a22;
-
-        if (std::cin.fail())
-        {
-            std::cerr << "Input invalido\n";
-            return EXIT_FAILURE;
-        }
-
-        Matrix2 mat = {a11, a12, a21, a22};
-
-        double det = determinant(mat);
-        std::cout << "\nDeterminant is: " << det << "\n\n";
-
-        if (det == 0)
-        {
-            std::cout << "The matrix is invertible\n";
-        }
-
-        Solution autoval = autovalues(mat);
-
-        std::cout << "First autovalue\n"
-                  << "Real: " << autoval.first().real()
-                  << " Imag: " << autoval.first().imag() << "\n\n";
-        std::cout << "Second autovalue\n"
-                  << "Real: " << autoval.second().real()
-                  << " Imag: " << autoval.second().imag() << "\n\n";
-
-        std::cout << "The trace is: " << trace(mat) << std::endl;
-        return EXIT_SUCCESS;
+        trace += mat[i * (col_per_row + 1)];
     }
+    std::cout << "\n--- Trace ---\n"
+              << trace << '\n';
 
-    return 0;
+    //
+    //  Calculating determinant
+    //
+    std::cout << "\n--- Determinant ---\n";
+    std::cout << determinant(mat, col_per_row) << '\n';
 }
