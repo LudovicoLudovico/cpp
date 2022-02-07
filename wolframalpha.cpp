@@ -5,7 +5,17 @@
 #include <cmath>
 #include <algorithm>
 
-int determinant(std::vector<int> const &mat, int size)
+struct Matrix
+{
+    std::vector<int> mat;
+    int col_per_row;
+    int row_num;
+};
+
+bool are_dipendent(const std::vector<int> &vec1, const std::vector<int> &vec2){
+    
+}
+int determinant(const std::vector<int> &mat, int size)
 {
     if (size == 2)
     {
@@ -17,10 +27,7 @@ int determinant(std::vector<int> const &mat, int size)
         std::vector<int> copy = mat;
         std::vector<int> result;
         copy.erase(copy.begin(), copy.begin() + (size));
-        // mat[i] * (-1)^(i + 2) * determinant()
 
-        // {4,5,6,7,8,9}
-        //    -     -
         int counter = i;
         for (int j = 0; j < copy.size(); j++)
         {
@@ -37,17 +44,8 @@ int determinant(std::vector<int> const &mat, int size)
     }
     return det;
 }
-
-int main()
+Matrix create_matrix(std::string const &input)
 {
-    std::cout << "\n---------- INSERT MATRIX ----------\n";
-
-    //= "{1,2,3,5}{4,5,6,8}{7,8,9,10}{1,-3,5,6}"
-    std::string input;
-    input.erase(std::remove_if(input.begin(), input.end(), isspace), input.end());
-    std::cout << input;
-    std::getline(std::cin, input);
-
     std::vector<int> del;
     int row_num = 0;
     int col_num = 0;
@@ -77,22 +75,21 @@ int main()
         mat.push_back(std::stoi(sub));
     }
 
-    //
-    // Displaying Matrix Dimensions and error messages
-    //
-    std::cout << "\n--- Matrix Dimensions ---\n";
-    std::cout << row_num << 'x' << col_per_row << '\n';
+    return Matrix{mat, col_per_row, row_num};
+}
 
-    if (row_num != col_per_row)
+std::vector<int> operator+(std::vector<int> const mat1, std::vector<int> const mat2)
+{
+    std::vector<int> result;
+    for (int i = 0; i < mat1.size(); i++)
     {
-        std::cout << "Can't calculate determinant\n";
-        std::cout << "Can't calculate trace\n";
-        return EXIT_FAILURE;
+        result.push_back(mat1[i] + mat2[i]);
     }
+    return result;
+}
 
-    //
-    // Printing Matrix
-    //
+void print_matrix(const std::vector<int> &mat, int col_per_row)
+{
     std::cout << "\n--- Matrix ---\n";
     int counter = 0;
     for (int i = 0; i < mat.size(); i++)
@@ -105,10 +102,10 @@ int main()
             counter = 0;
         }
     }
+}
 
-    //
-    // Calculating Trace
-    //
+void calculate_trace(const std::vector<int> &mat, int row_num, int col_per_row)
+{
     int trace = mat[0];
     for (int i = 1; i < row_num; i++)
     {
@@ -116,10 +113,61 @@ int main()
     }
     std::cout << "\n--- Trace ---\n"
               << trace << '\n';
+}
 
-    //
-    //  Calculating determinant
-    //
+int main()
+{
+    std::cout << "\n---------- INSERT MATRIX ----------\n";
+
+    //= "{1,2,3,5}{4,5,6,8}{7,8,9,10}{1,-3,5,6} + {1,2,3,5}{4,5,6,8}{7,8,9,10}{1,-3,5,6}"
+    std::string input;
+    std::getline(std::cin, input);
+    input.erase(std::remove_if(input.begin(), input.end(), isspace), input.end());
+
+    std::string result = input;
+    if (input.find('+') != std::string::npos)
+    {
+        for (int i = 0; i < input.size(); i++)
+        {
+            if (input[i] == '+')
+            {
+                std::string second = input;
+                second.erase(second.begin() + i, second.end());
+                input.erase(input.begin(), input.begin() + i + 1);
+                Matrix mat1 = create_matrix(input);
+                Matrix mat2 = create_matrix(second);
+
+                std::vector<int> resultVec = mat1.mat + mat2.mat;
+                std::string str(resultVec.begin(), resultVec.end());
+                std::cout << str;
+                result = str;
+            }
+        }
+    }
+    std::cout << result;
+
+    Matrix cmat = create_matrix(result);
+    int row_num = cmat.row_num;
+    int col_per_row = cmat.col_per_row;
+
+    std::cout << "\n--- Matrix Dimensions ---\n";
+    std::cout << row_num << 'x' << col_per_row << '\n';
+
+    if (row_num != col_per_row)
+    {
+        std::cout << "Can't calculate determinant\n";
+        std::cout << "Can't calculate trace\n";
+        return EXIT_FAILURE;
+    }
+
+    print_matrix(cmat.mat, col_per_row);
+
     std::cout << "\n--- Determinant ---\n";
-    std::cout << determinant(mat, col_per_row) << '\n';
+    int det = determinant(cmat.mat, col_per_row);
+    std::cout << det << '\n';
+
+    if (det != 0)
+    {
+        std::cout << "The matrix is invertible\n";
+    }
 }
