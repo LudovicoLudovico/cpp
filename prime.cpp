@@ -10,18 +10,15 @@ std::vector<int> is_prime(int num)
 
     std::vector<int> result = {1, 1};
     if (num < 4)
-    {
         return result;
-    }
     else
     {
         int counter = 2;
         while (counter <= num / 2 + 1)
         {
             if (num % counter == 0)
-            {
                 return {0, counter};
-            }
+
             ++counter;
         }
     }
@@ -60,9 +57,7 @@ int main()
 
     std::vector<int> result = is_prime(num);
     if (result[0] == 1)
-    {
         std::cout << "It's prime\n";
-    }
     else
     {
         std::cout << "It's not prime\n";
