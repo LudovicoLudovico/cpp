@@ -1,209 +1,169 @@
-#include <cmath>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "cassert"
+#include "doctest.h"
 #include <iostream>
-#include <cstdlib>
-
-// Defining Class for Complex
-class Complex
-{
-private:
-    double r;
-    double i;
-
-public:
-    Complex(double a, double b) : r{a}, i{b} {};
-    double real() { return r; };
-    double imag() { return i; };
-};
-
-// Defining Solution Class that combines two complex
-class Solution
-{
-private:
-    double a;
-    double ai;
-    double b;
-    double bi;
-
-public:
-    Solution(Complex x1, Complex x2) : a{x1.real()}, ai{x1.imag()}, b{x2.real()}, bi{x2.imag()}
-    {
-    }
-    Complex first() { return Complex{a, ai}; };
-    Complex second() { return Complex{b, bi}; };
-};
 
 /*
-    Describing operators for complex numbers
+   COMPLEX CLASS
 */
-Complex operator+(Complex &a, Complex &b)
-{
-    double real = a.real() + b.real();
-    double imag = a.imag() + b.imag();
+template <typename T> class Complex {
+private:
+  T r_{};
+  T i_{};
 
-    Complex c = {real, imag};
-    return c;
-}
-Complex operator-(Complex &a, Complex &b)
-{
-    double real = a.real() - b.real();
-    double imag = a.imag() - b.imag();
+public:
+  Complex(T a, T b) : r_{a}, i_{b} {};
+  T real() const { return r_; };
+  T imag() const { return i_; };
+  void print() const {
+    std::cout << r_ << (i_ >= 0 ? " + " : " - ") << i_ << 'i' << '\n';
+  }
+};
 
-    Complex c = {real, imag};
-    return c;
-}
-Complex operator*(Complex &a, Complex &b)
-{
-    double real = (a.real() * b.real()) + (a.imag() * b.imag()) * -1;
-    double imag = (a.real() * b.imag()) + (a.imag() * b.real());
-    Complex c = {real, imag};
-    return c;
+template <typename T, typename R>
+bool operator==(Complex<T> const &a, Complex<R> const &b) {
+  return (a.real() == b.real()) && (b.imag() == b.imag());
 }
 
-bool operator==(Complex &a, Complex &b)
-{
-    return (a.real() == b.real()) && (b.imag() == b.imag());
+template <typename T, typename R>
+auto operator+(Complex<T> const &a, Complex<R> const &b) {
+  auto real = a.real() + b.real();
+  auto imag = a.imag() + b.imag();
+  return Complex{real, imag};
 }
 
-// Calculating the norm squared of a vector
-double norm(Complex &c)
-{
-    return (c.real() * c.real() + c.imag() * c.imag());
+template <typename T, typename R>
+auto operator-(Complex<T> const &a, Complex<R> const &b) {
+  return Complex{a.real() - b.real(), a.imag() - b.imag()};
 }
 
-// Calculates the solution of a second grade equation and return both solutions in a Solution type
-Solution calculate_solution(double a, double b, double c)
-{
-    bool hasComplexSol = false;
-    double delta = (b * b) + (-4 * a * c);
-    if (delta < 0)
-    {
-        delta *= -1;
-        hasComplexSol = true;
-    }
-
-    if (hasComplexSol)
-    {
-        Complex x1 = {(b * -1 / (2 * a)), sqrt(delta) / (2 * a)};
-        Complex x2 = {(b * -1 / (2 * a)), (sqrt(delta) / (2 * a)) * -1};
-        Solution sol = {x1, x2};
-        return sol;
-    }
-    else
-    {
-        Complex x1 = {((b * -1) + sqrt(delta)) / (2 * a), 0};
-        Complex x2 = {((b * -1) - sqrt(delta)) / (2 * a), 0};
-        Solution sol = {x1, x2};
-        return sol;
-    }
+template <typename T, typename R>
+auto operator*(Complex<T> const &a, Complex<R> const &b) {
+  auto real = (a.real() * b.real()) + (a.imag() * b.imag()) * -1;
+  auto imag = a.real() * b.imag() + a.imag() * b.real();
+  return Complex{real, imag};
 }
 
-// Calculates the conjugate of a number a+ib -> a-ib
-Complex conjugates(Complex &a)
-{
-    Complex conjugate = {a.real(), a.imag() * -1};
-    return conjugate;
+template <typename T> double norm2(Complex<T> const &c) {
+  return (c.real() * c.real() + c.imag() * c.imag());
 }
 
-int main()
-{
-    // Operetion selection
-    std::cout << "__________   SELECT AN OPERATION   _________\n";
-    std::cout << " (1) - Somma\n (2) - Differenza \n (3) - Prodotto \n (4) - Norma \n (5) - Coniugato \n (6) - Equazione di secondo grado \n";
+template <typename T> auto conjugate(Complex<T> &a) {
+  return Complex{a.real(), (a.imag() * 1)};
+}
 
-    int selection;
-    std::cin >> selection;
+/*
+   SOLUTION CLASS
+*/
+class Solution {
+private:
+  double a;
+  double ai;
+  double b;
+  double bi;
 
-    if (std::cin.fail() || selection > 6)
-    {
-        std::cerr << "Invalid number\n";
-        return EXIT_FAILURE;
-    }
+public:
+  Solution(Complex<double> x1, Complex<double> x2)
+      : a{x1.real()}, ai{x1.imag()}, b{x2.real()}, bi{x2.imag()} {}
+  Complex<double> first() { return Complex<double>{a, ai}; };
+  Complex<double> second() { return Complex<double>{b, bi}; };
+};
 
-    if (selection < 4)
-    {
-        std::cout << "Inserisci i due numeri: \n";
-        double a, ai, b, bi;
-        std::cin >> a >> ai >> b >> bi;
+Solution calculate_solution(double a, double b, double c) {
+  bool hasComplexSol = false;
+  auto delta = (b * b) + (-4 * a * c);
+  if (delta < 0) {
+    delta *= -1;
+    hasComplexSol = true;
+  }
 
-        if (std::cin.fail())
-        {
-            std::cerr << "Invalid number\n";
-            return EXIT_FAILURE;
-        }
+  if (hasComplexSol) {
+    Complex<double> x1 = {(b * -1 / (2 * a)), sqrt(delta) / (2 * a)};
+    Complex<double> x2 = {(b * -1 / (2 * a)), (sqrt(delta) / (2 * a)) * -1};
+    return {x1, x2};
+  } else {
+    Complex<double> x1 = {((b * -1) + sqrt(delta)) / (2 * a), 0.0};
+    Complex<double> x2 = {((b * -1) - sqrt(delta)) / (2 * a), 0.0};
+    return {x1, x2};
+  }
+}
 
-        Complex a_compl = {a, ai};
-        Complex b_compl = {b, bi};
-        Complex result = {0, 0};
+/*
+   TESTING COMPLEX
+*/
+TEST_CASE("Testing Complex") {
+  SUBCASE("Testing .real()") {
+    Complex<int> r{3, 4};
+    CHECK(r.real() == 3);
 
-        switch (selection)
-        {
-        case 1:
-            result = a_compl + b_compl;
-            break;
-        case 2:
-            result = a_compl - b_compl;
-            break;
-        case 3:
-            result = a_compl * b_compl;
-            break;
-        default:
-            return EXIT_FAILURE;
-            break;
-        }
+    Complex<double> a{3.2, 4.5};
+    CHECK(a.real() == 3.2);
+  }
 
-        std::cout << "Reale: " << result.real() << " Imag: " << result.imag() << std::endl;
-        return 0;
-    }
+  SUBCASE("Testing .imag()") {
+    Complex<int> r{3, 4};
+    CHECK(r.imag() == 4);
 
-    if (selection == 4 || selection == 5)
-    {
-        std::cout << "Inserisci il numero: \n";
-        double a, ai;
-        std::cin >> a >> ai;
+    Complex<double> a{3.2, 4.5};
+    CHECK(a.imag() == 4.5);
+  }
 
-        if (std::cin.fail())
-        {
-            std::cerr << "Invalid number\n";
-            return EXIT_FAILURE;
-        }
+  SUBCASE("Printing") {
+    Complex<double> a{3.2, 4.5};
+    a.print();
+  }
 
-        Complex a_compl = {a, ai};
-        Complex result = {0, 0};
+  SUBCASE("Testing + operator") {
+    Complex<int> a{2, 2};
+    Complex<int> b{3, 3};
+    Complex<double> c{3.0, 3.0};
 
-        switch (selection)
-        {
-        case 4:
-            result = {norm(a_compl), 0};
-            break;
-        case 5:
-            result = conjugates(a_compl);
-            break;
-        default:
-            return EXIT_FAILURE;
-            break;
-        }
+    CHECK(a + b == Complex{5, 5});
+    CHECK(a + c == Complex{5.0, 5.0});
+  }
 
-        std::cout << "Reale: " << result.real() << " Imag: " << result.imag() << std::endl;
-        return 0;
-    }
+  SUBCASE("Testing - operator") {
+    Complex<int> a{2, 2};
+    Complex<int> b{3, 3};
+    Complex<double> c{3.0, 3.0};
 
-    if (selection == 6)
-    {
-        std::cout << "Inserisci i parametri a, b e c dell'equazione: \n";
-        double a, b, c;
-        std::cin >> a >> b >> c;
+    CHECK(a - b == Complex{-1, -1});
+    CHECK(a - c == Complex{-1.0, -1.0});
+  }
+  SUBCASE("Testing * operator") {
+    Complex<int> a{8, -5};
+    Complex<int> b{3, -2};
+    Complex<double> c{3.0, -2.0};
 
-        if (std::cin.fail())
-        {
-            std::cerr << "Invalid number\n";
-            return EXIT_FAILURE;
-        }
+    CHECK(a * b == Complex{14, -31});
+    CHECK(a * c == Complex{14.0, -31.0});
+  }
+  SUBCASE("Testing norm2") {
+    Complex<int> a{3, 2};
+    CHECK(norm2(a) == 13);
+  }
+  SUBCASE("Testing conjugate") {
+    Complex<int> a{2, 3};
+    Complex<double> b{2.0, 3.0};
 
-        Solution sols = calculate_solution(a, b, c);
+    CHECK(conjugate(a) == Complex{2, -3});
+    CHECK(conjugate(b) == Complex{2.0, -3.0});
+  }
+}
 
-        std::cout << "Real: " << sols.first().real() << " Imag: " << sols.first().imag() << "i\n";
-        std::cout << "Real: " << sols.second().real() << " Imag: " << sols.second().imag() << "i\n";
-    }
+/*
+   TESTING SOLUTION
+*/
+TEST_CASE("Testing Solution") {
+  SUBCASE("Testing function") {
+    int a = 3;
+    int b = 10;
+    int c = 3;
 
-    return 0;
+    Solution result = calculate_solution(a, b, c);
+    result.first().print();
+    CHECK(result.second() == Complex<double>{-3, 0});
+    CHECK(doctest::Approx(result.first().real()) == -0.333333);
+    CHECK(result.first().imag() == 0);
+  }
 }
