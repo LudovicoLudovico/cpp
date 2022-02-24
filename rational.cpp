@@ -1,16 +1,18 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <numeric>
 
-template <typename T> class Rational {
-private:
+#include "doctest.h"
+
+template <typename T>
+class Rational {
+ private:
   T n_{};
   T d_{};
 
-public:
+ public:
   Rational(T numerator = 1, T denominator = 1)
       : n_{numerator}, d_{denominator} {
     assert(d_ != 0);
@@ -49,14 +51,16 @@ auto operator+(Rational<T> const &a, Rational<R> const &b) {
   return Rational{num, den};
 }
 
-template <typename T> auto operator+(Rational<T> const &a, int b) {
+template <typename T>
+auto operator+(Rational<T> const &a, int b) {
   T den = std::lcm(a.denominator(), 1);
   T num = den / a.denominator() * a.numerator() + den / b;
 
   return Rational{num, den};
 }
 
-template <typename T> auto operator++(Rational<T> const &a) {
+template <typename T>
+auto operator++(Rational<T> const &a) {
   T den = std::lcm(a.denominator(), 1);
   T num = den / a.denominator() * a.numerator() + den / 1;
   return Rational{num, den};
@@ -70,14 +74,17 @@ auto operator-(Rational<T> const &a, Rational<R> const &b) {
 
   return Rational{num, den};
 }
-template <typename T> auto operator-(Rational<T> const &a, int b) {
+template <typename T>
+auto operator-(Rational<T> const &a, int b) {
   T den = std::lcm(a.denominator(), 1);
   T num = den / a.denominator() * a.numerator() - den / b;
+  assert(den > 0);
 
   return Rational{num, den};
 }
 
-template <typename T> auto operator--(Rational<T> const &a) {
+template <typename T>
+auto operator--(Rational<T> const &a) {
   T den = std::lcm(a.denominator(), 1);
   T num = den / a.denominator() * a.numerator() - den / 1;
   return Rational{num, den};
@@ -89,7 +96,9 @@ auto operator*(Rational<T> const &a, Rational<R> const &b) {
                   a.denominator() * b.denominator()};
 }
 
-template <typename T> auto operator^(Rational<T> const &a, int power) {
+template <typename T>
+auto operator^(Rational<T> const &a, int power) {
+  assert(power > 0);
   int num = pow(a.numerator(), power);
   int den = pow(a.denominator(), power);
 
@@ -98,11 +107,13 @@ template <typename T> auto operator^(Rational<T> const &a, int power) {
 
 template <typename T, typename R>
 auto operator/(Rational<T> const &a, Rational<R> const &b) {
+  assert(b.numerator() != 0 && a.denominator() != 0);
   return Rational{a.numerator() * b.denominator(),
                   a.denominator() * b.numerator()};
 }
 
-template <typename T> double calculate(Rational<T> const &a) {
+template <typename T>
+double calculate(Rational<T> const &a) {
   return double(a.numerator()) / a.denominator();
 }
 
