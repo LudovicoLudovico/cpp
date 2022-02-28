@@ -6,39 +6,27 @@
 
 #include "doctest.h"
 
+template <typename T>
 class Matrix {
  private:
-  std::vector<int> mat_;
-  std::string input_;
+  std::vector<T> mat_;
+  std::vector<std::vector<T>> input_;
   int col_per_row_{};
   int row_num_{};
 
  public:
-  Matrix(std::string const& input) : input_{input} {
-    std::vector<int> del;
-    int col_num = 0;
-
-    // Finding dels
-    for (int i = 0; i < input.size(); i++) {
-      if (input[i] == '{' || input[i] == '}' || input[i] == ',') {
-        if (input[i] == '}') row_num_++;
-        if (input[i] == ',' || input[i] == '}') col_num++;
-        del.push_back(i);
+  Matrix(std::vector<std::vector<T>> const& input) : input_{input} {
+    for (auto i = 0; i < input_.size(); i++) {
+      row_num_++;
+      for (auto j = 0; j < input_[i].size(); j++) {
+        mat_.push_back(input_[i][j]);
       }
     }
 
-    col_per_row_ = col_num / row_num_;
-
-    std::vector<int> curr_row;
-    for (int i = 0; i < del.size() - 1; i++) {
-      if (del[i + 1] - del[i] == 1) continue;
-      std::string sub = input.substr(del[i], del[i + 1] - del[i]);
-      sub = sub.substr(1, sub.size() - 1);
-      mat_.push_back(std::stoi(sub));
-    }
+    col_per_row_ = input_[1].size();
   }
 
-  std::vector<int> get_mat() const { return mat_; }
+  std::vector<T> get_mat() const { return mat_; }
   int get_size() const { return col_per_row_; }
 
   void print_matrix() const {
@@ -54,7 +42,7 @@ class Matrix {
     }
   }
 
-  int calculate_trace() const {
+  T calculate_trace() const {
     assert(row_num_ == col_per_row_);
     int trace = mat_[0];
     for (int i = 1; i < row_num_; i++) {
@@ -64,14 +52,15 @@ class Matrix {
   }
 };
 
-double determinant(std::vector<int> const& mat, int size) {
+template <typename T>
+double determinant(std::vector<T> const& mat, int size) {
   if (size == 2) {
     return mat[0] * mat[3] - mat[1] * mat[2];
   }
   double det = 0;
   for (int i = 0; i < size; i++) {
-    std::vector<int> copy = mat;
-    std::vector<int> result;
+    std::vector<T> copy = mat;
+    std::vector<T> result;
     copy.erase(copy.begin(), copy.begin() + (size));
 
     int counter = i;
@@ -80,7 +69,6 @@ double determinant(std::vector<int> const& mat, int size) {
         counter += size;
         continue;
       }
-
       result.push_back(copy[j]);
     }
 
@@ -90,10 +78,10 @@ double determinant(std::vector<int> const& mat, int size) {
 }
 
 TEST_CASE("Testing Matrix Class") {
-  Matrix r{"{1,2,3,5}{4,5,6,8}{7,8,9,10}{1,-3,5,6}"};
-  SUBCASE("Printing Matrix") { r.print_matrix(); }
-  SUBCASE("Calculating Trace") { CHECK(r.calculate_trace() == 21); }
+  Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+  SUBCASE("Printing Matrix") { a.print_matrix(); }
+  SUBCASE("Calculating Trace") { CHECK(a.calculate_trace() == 21); }
   SUBCASE("Calculating detemrinant") {
-    CHECK(determinant(r.get_mat(), r.get_size()) == -36);
+    CHECK(determinant(a.get_mat(), a.get_size()) == -36);
   }
 }
