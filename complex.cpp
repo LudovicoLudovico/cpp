@@ -76,6 +76,7 @@ class Solution {
 
 Solution calculate_solution(double a, double b, double c) {
   if (a == 0 && b == 0 && c != 0) throw std::runtime_error{"No solutions"};
+  assert(a != 0);
   bool hasComplexSol = false;
   auto delta = (b * b) + (-4 * a * c);
   if (delta < 0) {
@@ -92,6 +93,7 @@ Solution calculate_solution(double a, double b, double c) {
     x1 = {((b * -1) + sqrt(delta)) / (2 * a), 0.0};
     x2 = {((b * -1) - sqrt(delta)) / (2 * a), 0.0};
   }
+
   return {x1, x2};
 }
 
