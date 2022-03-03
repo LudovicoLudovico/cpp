@@ -1,7 +1,12 @@
 #ifndef STATISTICS
 #define STATISTICS
-
+#include <cassert>
+#include <vector>
 namespace stats {
+struct Weighted {
+  double value;
+  double weight;
+};
 class Mean {
   int N_{};
   double sum_x_{};
@@ -10,30 +15,33 @@ class Mean {
 
  public:
   int size() const;
-  void add(double value, double weight);
-  void add(double value);
+  void add(std::vector<Weighted> const& vect);
+  void add(std::vector<double> const& vect);
   double mean() const;
   double w_mean() const;
 };
-
 inline int Mean::size() const { return N_; }
-inline void Mean::add(double value, double weight) {
-  if (weight <= 0) throw std::runtime_error{"Weight can't be zero"};
-  sum_w_x_ += value * weight;
-  sum_x_ += value;
-  sum_w_ += weight;
-  N_++;
+inline void Mean::add(std::vector<Weighted> const& vect) {
+  for (size_t i = 0; i != vect.size(); i++) {
+    if (vect[i].weight <= 0) throw std::runtime_error{"Weight can't be zero"};
+    sum_w_x_ += vect[i].value * vect[i].weight;
+    sum_x_ += vect[i].value;
+    sum_w_ += vect[i].weight;
+  }
 }
-inline void Mean::add(double value) {
-  sum_x_ += value;
-  N_++;
+
+inline void Mean::add(std::vector<double> const& vect) {
+  for (size_t i = 0; i != vect.size(); i++) {
+    sum_x_ += vect[i];
+    N_++;
+  }
 }
 inline double Mean::mean() const {
   if (N_ == 0) throw std::runtime_error{"Can't calculate mean without values"};
   return (sum_x_ / N_);
 }
 inline double Mean::w_mean() const {
-  //   assert(sum_w != 0);
+  assert(sum_w_ != 0);
   if (N_ == 0)
     throw std::runtime_error{"Can't calculate weighted mean without values"};
 

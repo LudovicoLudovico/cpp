@@ -47,14 +47,22 @@ auto operator*(Complex<T> const& a, Complex<R> const& b) {
   return Complex{real, imag};
 }
 
+template <typename T, typename R>
+auto operator/(Complex<T> const& a, Complex<R> const& b) {
+  double den = (b * conjugate(b)).real();
+  auto num = a * conjugate(b);
+
+  return Complex{num.real() / den, num.imag() / den};
+}
+
 template <typename T>
 double norm2(Complex<T> const& c) {
   return (c.real() * c.real() + c.imag() * c.imag());
 }
 
 template <typename T>
-auto conjugate(Complex<T>& a) {
-  return Complex{a.real(), (a.imag() * 1)};
+auto conjugate(Complex<T> const& a) {
+  return Complex{a.real(), (a.imag() * -1)};
 }
 
 /*
@@ -148,6 +156,19 @@ TEST_CASE("Testing Complex") {
 
     CHECK(a * b == Complex{14, -31});
     CHECK(a * c == Complex{14.0, -31.0});
+  }
+  SUBCASE("Testing / operator") {
+    Complex<int> a{5, 3};
+    Complex<int> b{2, -4};
+    auto result = a / b;
+    CHECK(result.real() == -0.1);
+    CHECK(result.imag() == 1.3);
+
+    Complex<int> c{7, 4};
+    Complex<int> d{-3, -1};
+    auto result1 = c / d;
+    CHECK(result1.real() == -2.5);
+    CHECK(result1.imag() == -0.5);
   }
   SUBCASE("Testing norm2") {
     Complex<int> a{3, 2};
