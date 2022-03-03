@@ -18,6 +18,14 @@ struct RegressionResult {
   T B;
   T sB;
 };
+template <typename T>
+struct RegressionResultY {
+  T A;
+  T sA;
+  T B;
+  T sB;
+  T sY;
+};
 
 template <typename T>
 struct MaxMin {
@@ -140,6 +148,32 @@ class Statistics {
     T const sigma_b = sigma_y * sqrt(N_ / (N_ * sum_x2_ - (sum_x_ * sum_x_)));
     return {a, sigma_a, b, sigma_b};
   }
+  RegressionResultY<T> fit() {
+    if (N_ < 2) throw std::runtime_error{"Not enough points to run a fit"};
+
+    for (auto& point : data_points_) {
+      sum_x_ += point.X;
+      sum_x2_ += point.X * point.X;
+      sum_y_ += point.Y;
+      sum_xy_ += point.X * point.Y;
+    }
+    T const d = N_ * sum_x2_ - sum_x_ * sum_x_;
+    if (d == 0.) throw std::runtime_error{"Trying to fit a vertical line"};
+
+    T const a = (sum_y_ * sum_x2_ - sum_x_ * sum_xy_) / d;
+    T const b = (N_ * sum_xy_ - sum_x_ * sum_y_) / d;
+
+    T sum_a_b{};
+    for (auto& point : data_points_) {
+      sum_a_b += (point.Y - a - (b * point.X)) * (point.Y - a - (b * point.X));
+    }
+
+    T sigma_y = sqrt(sum_a_b / (N_ - 2));
+    T const sigma_a =
+        sigma_y * sqrt(sum_x2_ / (N_ * sum_x2_ - (sum_x_ * sum_x_)));
+    T const sigma_b = sigma_y * sqrt(N_ / (N_ * sum_x2_ - (sum_x_ * sum_x_)));
+    return {a, sigma_a, b, sigma_b, sigma_y};
+  }
 };
 
 TEST_CASE("Testing Regression") {
@@ -186,6 +220,11 @@ TEST_CASE("Testing Regression") {
     CHECK(result.B == doctest::Approx(0.056).epsilon(0.01));
     CHECK(result.sA == doctest::Approx(0.76).epsilon(0.01));
     CHECK(result.sB == doctest::Approx(0.007).epsilon(0.001));
+  }
+  SUBCASE("Approximating sigma Y") {
+    reg.add({{50, 12.6}, {100, 14.8}, {150, 18.2}});
+    auto result = reg.fit();
+    CHECK(doctest::Approx(result.sY).epsilon(0.00001) == 0.48989);
   }
 }
 
