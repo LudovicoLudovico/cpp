@@ -1,4 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <cassert>
 #include <iostream>
 #include <vector>
 
@@ -13,7 +14,9 @@ class Matrix {
 
  public:
   Matrix(std::vector<std::vector<T>> const& mat)
-      : matrix_{mat}, n_row_{mat.size()}, n_col_{mat[0].size()} {}
+      : matrix_{mat},
+        n_row_{static_cast<int>(mat.size())},
+        n_col_{static_cast<int>(mat[0].size())} {}
   auto get_n_row() const { return n_row_; };
   auto get_n_col() const { return n_col_; };
   auto get_matrix() const { return matrix_; };
@@ -44,6 +47,57 @@ class Matrix {
       }
     }
     return true;
+  }
+
+  auto transpose(int num_to_delete = 0, bool isRow = true) {
+    // std::cout << num_to_delete << ' ' << isRow << '\n';
+    if (n_col_ == n_row_) {
+      int init = 0;
+      for (size_t i = 0; i != n_row_; i++) {
+        for (size_t j = init; j != n_col_; j++) {
+          T a = matrix_[i][j];
+          matrix_[i][j] = matrix_[j][i];
+          matrix_[j][i] = a;
+        }
+        init++;
+      }
+
+      // Clean the matrix_rix
+      if (num_to_delete != 0) {
+        if (isRow) {
+          for (size_t i = 0; i != num_to_delete; i++) {
+            matrix_.pop_back();
+          }
+          n_row_ -= num_to_delete;
+        } else {
+          for (size_t i = 0; i != n_row_; i++) {
+            for (size_t j = 0; j != num_to_delete; j++) {
+              matrix_[i].pop_back();
+            }
+          }
+          n_col_ -= num_to_delete;
+        }
+      }
+
+      return *this;
+    } else if (n_col_ > n_row_) {
+      for (size_t i = 0; i != (n_col_ - n_row_); i++) {
+        std::vector<int> row(5);
+        matrix_.push_back(row);
+      }
+      int diff = n_col_ - n_row_;
+      n_row_ = n_col_;
+      return this->transpose(diff, false);
+    } else {
+      for (size_t i = 0; i != n_row_; i++) {
+        for (size_t j = 0; j != (n_row_ - n_col_); j++) {
+          matrix_[i].push_back(0);
+        }
+      }
+      int diff = n_row_ - n_col_;
+      n_col_ = n_row_;
+      return this->transpose(diff, true);
+    }
   }
 };
 
@@ -106,61 +160,13 @@ auto operator/(Matrix<T>& a, R scalar) {
 }
 
 template <typename T>
-T determinant(Matrix<T> const& a) {
-  auto mat = a.get_matrix();
-  if (a.get_n_row() == 2) {
-    return (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]);
-  } else {
-    return -1;
+Matrix<T> create_matrix_from_dimensions(int size) {
+  std::vector<std::vector<T>> mat{};
+  for (size_t i = 0; i != size; i++) {
+    std::vector<T> row(size);
+    mat.push_back(row);
   }
-}
-
-template <typename T>
-auto transpose(Matrix<T>& a, int num_to_delete = 0, bool isRow = true) {
-  int col = a.get_n_col();
-  int row = a.get_n_row();
-  auto mat = a.get_matrix();
-
-  if (col == row) {
-    int init = 0;
-    for (size_t i = 0; i != row; i++) {
-      for (size_t j = init; j != col; j++) {
-        T a = mat[i][j];
-        mat[i][j] = mat[j][i];
-        mat[j][i] = a;
-      }
-      init++;
-    }
-
-    // Clean the matrix
-    if (num_to_delete != 0) {
-      if (isRow) {
-        for (size_t i = 0; i != num_to_delete; i++) mat.pop_back();
-      } else {
-        for (size_t i = 0; i != row; i++) {
-          for (size_t j = 0; j != num_to_delete; j++) mat[i].pop_back();
-        }
-      }
-    }
-
-    return Matrix<T>{mat};
-  } else if (col > row) {
-    for (size_t i = 0; i != (col - row); i++) {
-      std::vector<int> row(5);
-      mat.push_back(row);
-    }
-    Matrix<T> c{mat};
-
-    return transpose(c, col - row, false);
-  } else {
-    for (size_t i = 0; i != row; i++) {
-      for (size_t j = 0; j != (row - col); j++) {
-        mat[i].push_back(0);
-      }
-    }
-    Matrix<T> c{mat};
-    return transpose(c, row - col, true);
-  }
+  return Matrix{mat};
 }
 
 TEST_CASE("Testing Matrix") {
@@ -199,16 +205,15 @@ TEST_CASE("Testing Matrix") {
     CHECK(b.isSymmetric());
   }
   SUBCASE("Transpose matrix") {
-    CHECK(transpose(a) ==
+    CHECK(a.transpose() ==
           Matrix<int>{
               {{1, 4, 7, 1}, {2, 5, 8, -3}, {3, 6, 9, 5}, {5, 8, 10, 6}}});
     Matrix<int> b{{{1, 2}, {3, 4}, {4, 5}}};
 
-    CHECK(transpose(b) == Matrix<int>{{{1, 3, 4}, {2, 4, 5}}});
+    CHECK(b.transpose() == Matrix<int>{{{1, 3, 4}, {2, 4, 5}}});
   }
-
-  SUBCASE("Calculating determinant") {
-    Matrix<int> a{{{3, 2}, {1, 4}}};
-    CHECK(determinant(a) == 10);
+  SUBCASE("Create matrix from dimensions") {
+    CHECK(create_matrix_from_dimensions<int>(2) ==
+          Matrix<int>{{{0, 0}, {0, 0}}});
   }
 }
