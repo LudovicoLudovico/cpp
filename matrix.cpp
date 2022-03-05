@@ -13,6 +13,7 @@ class Matrix {
   std::vector<std::vector<T>> matrix_{};
   int n_row_{};
   int n_col_{};
+  int n_of_reorders_{};
 
  public:
   Matrix(std::vector<std::vector<T>> const& mat)
@@ -100,6 +101,101 @@ class Matrix {
       return this->transpose(diff, true);
     }
   }
+
+  auto remove_null_rows() {
+    for (size_t i = 0; i != n_row_; i++) {
+      int zeros = 0;
+      for (size_t j = 0; j != n_col_; j++) {
+        if (matrix_[i][j] != 0)
+          break;
+        else
+          ++zeros;
+      }
+      if (zeros == n_col_) {
+        matrix_.erase(matrix_.begin() + i);
+        --n_row_;
+        break;
+      }
+    }
+
+    return *this;
+  }
+
+  auto reorder() {
+    for (size_t i = 0; i != n_row_ - 1; i++) {
+      int allowed_zero = i;
+      int zeros = 0;
+      for (size_t j = 0; j != n_col_; j++) {
+        if (matrix_[i][j] != 0)
+          break;
+        else
+          ++zeros;
+      }
+
+      // if (zeros == n_col_) {
+      //   matrix_.erase(matrix_.begin() + i);
+      //   --n_row_;
+      //   --n_col_;
+      //   break;
+      // }
+      if (zeros > allowed_zero) {
+        auto row = matrix_[i + 1];
+        matrix_[i + 1] = matrix_[i];
+        matrix_[i] = row;
+        ++n_of_reorders_;
+      }
+    }
+
+    return *this;
+  }
+
+  auto determinant() {
+    auto b = this->gauss();
+    assert(b.get_n_row() == b.get_n_col());
+    auto mat = b.get_matrix();
+    double det = 1;
+    for (size_t i = 0; i != b.get_n_row(); i++) {
+      for (size_t j = 0; j != b.get_n_col(); j++) {
+        if (mat[i][j] != 0) {
+          det *= mat[i][j];
+          break;
+        }
+      }
+    }
+
+    if (n_of_reorders_ % 2 != 0) {
+      det = -det;
+    }
+    return det;
+  }
+
+  auto gauss() {
+    int offset = 0;
+    int line = 0;
+
+    for (size_t i = 0; i != n_col_; i++) {
+      this->reorder();
+      for (size_t i = line; i != n_row_ - 1; i++) {
+        if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) {
+          offset += 1;
+        }
+        if (matrix_[i + 1][offset] != 0 && matrix_[line][offset] != 0) {
+          double c = -1.0 * (double(matrix_[i + 1][offset]) /
+                             double(matrix_[line][offset]));
+          for (size_t j = offset; j != n_col_; j++) {
+            matrix_[i + 1][j] += c * matrix_[line][j];
+          }
+        }
+      }
+      ++line;
+      ++offset;
+    }
+
+    this->reorder();
+    this->remove_null_rows();
+
+    return *this;
+  }
 };
 
 template <typename T, typename R>
@@ -170,88 +266,9 @@ Matrix<T> create_matrix_from_dimensions(int size) {
   return Matrix{mat};
 }
 
-template <typename T>
-struct GaussResult {
-  Matrix<T> r;
-  int reorder;
-};
-
-template <typename T>
-GaussResult<T> gauss(Matrix<T> const& a) {
-  auto b = a;
-  auto mat = b.get_matrix();
-  auto n_col = b.get_n_col();
-  auto n_row = b.get_n_row();
-  int offset = 0;
-  int line = 0;
-  int num_of_reorders = 0;
-
-  for (size_t i = 0; i != n_col; i++) {
-    // Reordering vector
-    for (size_t i = 0; i != n_row - 1; i++) {
-      int allowed_zero = i;
-      int zeros = 0;
-      for (size_t j = 0; j != n_col; j++) {
-        if (mat[i][j] != 0)
-          break;
-        else
-          ++zeros;
-      }
-
-      if (zeros == n_col) {
-        mat.erase(mat.begin() + i);
-        --n_row;
-        --n_col;
-        break;
-      }
-      if (zeros > allowed_zero) {
-        auto row = mat[i + 1];
-        mat[i + 1] = mat[i];
-        mat[i] = row;
-        ++num_of_reorders;
-      }
-    }
-
-    // Gauss
-    for (size_t i = line; i != n_row - 1; i++) {
-      if (mat[i + 1][offset] != 0 && mat[line][offset] != 0) {
-        double c =
-            -1.0 * (double(mat[i + 1][offset]) / double(mat[line][offset]));
-        for (size_t j = offset; j != n_col; j++) {
-          mat[i + 1][j] += c * mat[line][j];
-        }
-      }
-    }
-    ++line;
-    ++offset;
-  }
-
-  return {Matrix{mat}, num_of_reorders};
-}
-
-template <typename T>
-auto determinant(Matrix<T> const& a) {
-  auto b = gauss(a);
-  auto mat = b.r.get_matrix();
-  double det = 1;
-  for (size_t i = 0; i != b.r.get_n_row(); i++) {
-    for (size_t j = 0; j != b.r.get_n_col(); j++) {
-      if (mat[i][j] != 0) {
-        det *= mat[i][j];
-        break;
-      }
-    }
-  }
-
-  if (b.reorder % 2 != 0) {
-    det = -det;
-  }
-  return det;
-}
-
 TEST_CASE("Testing Matrix") {
   Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
-  SUBCASE("Printing matrix") { a.print(); }
+  // SUBCASE("Printing matrix") { a.print(); }
   SUBCASE("Calculating Trace") { CHECK(a.trace() == 21); }
   SUBCASE("Testing == operator") {
     Matrix<double> b{
@@ -298,19 +315,21 @@ TEST_CASE("Testing Matrix") {
   }
   SUBCASE("Gauss") {
     Matrix<double> b{{{1, 2, 3}, {1, 2, 3}, {0, 0, 1}}};
-    auto c = gauss(b);
-    c.r.print();
+    b.print();
+    b.gauss().print();
 
-    auto d = gauss(a);
-    d.r.print();
+    std::cout << "--------------";
+    a.print();
+    a.gauss().print();
 
-    Matrix<double> f{{{1, 2, 3}, {1, 2, 3}, {1, 2, 2}}};
-    auto g = gauss(f);
-    g.r.print();
+    Matrix<double> f{{{1, 2, 3}, {1, 2, 2}, {1, 2, 2}}};
+    std::cout << "--------------";
+    f.print();
+    f.gauss().print();
   }
   SUBCASE("Calculating determinant") {
     Matrix<int> simple{{{1, 2}, {3, 4}}};
-    CHECK(determinant(simple) == -2);
-    CHECK(determinant(a) == -36);
+    CHECK(simple.determinant() == -2);
+    CHECK(a.determinant() == -36);
   }
 }
