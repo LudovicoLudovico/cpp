@@ -20,9 +20,10 @@ class Matrix {
       : matrix_{mat},
         n_row_{static_cast<int>(mat.size())},
         n_col_{static_cast<int>(mat[0].size())} {}
-  auto get_n_row() const { return n_row_; };
-  auto get_n_col() const { return n_col_; };
+  int get_n_row() const { return n_row_; };
+  int get_n_col() const { return n_col_; };
   auto get_matrix() const { return matrix_; };
+
   void print() const {
     std::cout << '\n';
     for (size_t i = 0; i != n_row_; i++) {
@@ -35,6 +36,7 @@ class Matrix {
   }
 
   T trace() const {
+    assert(n_col_ == n_row_);
     T trace = 0;
     for (size_t i = 0; i < n_row_; i++) {
       trace += matrix_[i][i];
@@ -149,6 +151,7 @@ class Matrix {
   }
 
   auto determinant() {
+    assert(n_col_ == n_row_);
     auto c = *this;
     auto b = this->gauss();
     assert(b.get_n_row() == b.get_n_col());
@@ -221,8 +224,21 @@ class Matrix {
   }
 };
 
+template <typename T>
+Matrix<T> create_matrix_from_dimensions(int n_col, int n_rows) {
+  std::vector<std::vector<T>> mat{};
+  for (size_t i = 0; i != n_rows; i++) {
+    std::vector<T> row(n_col);
+    mat.push_back(row);
+  }
+  return Matrix{mat};
+}
+
 template <typename T, typename R>
 bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
+  if (a.get_n_col() != b.get_n_col() || a.get_n_row() != b.get_n_row())
+    return false;
+
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
   for (size_t i = 0; i != a.get_n_row(); i++) {
@@ -235,6 +251,7 @@ bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
 
 template <typename T, typename R>
 auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
+  assert(a.get_n_col() == b.get_n_col() && a.get_n_row() == b.get_n_row());
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
   for (size_t i = 0; i != a.get_n_row(); i++) {
@@ -247,6 +264,7 @@ auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
 
 template <typename T, typename R>
 auto operator-(Matrix<T>& a, Matrix<R> const& b) {
+  assert(a.get_n_col() == b.get_n_col() && a.get_n_row() == b.get_n_row());
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
   for (size_t i = 0; i != a.get_n_row(); i++) {
@@ -269,6 +287,29 @@ auto operator*(Matrix<T>& a, R scalar) {
 }
 
 template <typename T, typename R>
+auto operator*(Matrix<T>& a, Matrix<R>& b) {
+  assert(a.get_n_col() == b.get_n_row());
+  Matrix r = create_matrix_from_dimensions<int>(b.get_n_col(), a.get_n_row());
+  auto result = r.get_matrix();
+  auto matA = a.get_matrix();
+  auto matB = b.get_matrix();
+  // auto c = b.transpose();
+
+  for (size_t i = 0; i != r.get_n_row(); i++) {
+    for (size_t j = 0; j != r.get_n_col(); j++) {
+      result[i][j] = 0;
+
+      for (size_t k = 0; k != a.get_n_col(); k++) {
+        result[i][j] += matA[i][k] * matB[k][j];
+      }
+    }
+    Matrix{result}.print();
+  }
+
+  return Matrix{result};
+}
+
+template <typename T, typename R>
 auto operator/(Matrix<T>& a, R scalar) {
   auto matA = a.get_matrix();
   for (size_t i = 0; i != a.get_n_row(); i++) {
@@ -277,16 +318,6 @@ auto operator/(Matrix<T>& a, R scalar) {
     }
   }
   return Matrix{matA};
-}
-
-template <typename T>
-Matrix<T> create_matrix_from_dimensions(int size) {
-  std::vector<std::vector<T>> mat{};
-  for (size_t i = 0; i != size; i++) {
-    std::vector<T> row(size);
-    mat.push_back(row);
-  }
-  return Matrix{mat};
 }
 
 TEST_CASE("Testing Matrix") {
@@ -316,8 +347,17 @@ TEST_CASE("Testing Matrix") {
         (a - b) ==
         Matrix<int>{{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}});
   }
+  SUBCASE("Testing * between matrices") {
+    Matrix<int> a = {{{1, 2}, {2, 3}}};
+    Matrix<int> b = {{{1, 2}, {2, 3}}};
+    CHECK(a * b == Matrix<int>{{{5, 8}, {8, 13}}});
+
+    Matrix<int> c{{{1, 2, 3}, {4, 5, 6}}};
+    Matrix<int> d{{{1, 1, 2}, {3, 4, 5}, {6, 7, 8}}};
+    CHECK(c * d == Matrix<int>{{{25, 30, 36}, {55, 66, 81}}});
+  }
   SUBCASE("Testing * scalar operator") { CHECK((a * 2) == (a + a)); }
-  SUBCASE("Testing * scalar operator") { CHECK((a / 1) == a); }
+  SUBCASE("Testing / scalar operator") { CHECK((a / 1) == a); }
   SUBCASE("Testing isSymmetric") {
     CHECK(!a.isSymmetric());
 
@@ -333,7 +373,7 @@ TEST_CASE("Testing Matrix") {
     CHECK(b.transpose() == Matrix<int>{{{1, 3, 4}, {2, 4, 5}}});
   }
   SUBCASE("Create matrix from dimensions") {
-    CHECK(create_matrix_from_dimensions<int>(2) ==
+    CHECK(create_matrix_from_dimensions<int>(2, 2) ==
           Matrix<int>{{{0, 0}, {0, 0}}});
   }
   SUBCASE("Gauss") {
