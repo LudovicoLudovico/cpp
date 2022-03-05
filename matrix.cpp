@@ -1,6 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <cassert>
+#include <cmath>
 #include <iostream>
+#include <ratio>
 #include <vector>
 
 #include "doctest.h"
@@ -50,7 +52,6 @@ class Matrix {
   }
 
   auto transpose(int num_to_delete = 0, bool isRow = true) {
-    // std::cout << num_to_delete << ' ' << isRow << '\n';
     if (n_col_ == n_row_) {
       int init = 0;
       for (size_t i = 0; i != n_row_; i++) {
@@ -169,6 +170,85 @@ Matrix<T> create_matrix_from_dimensions(int size) {
   return Matrix{mat};
 }
 
+template <typename T>
+struct GaussResult {
+  Matrix<T> r;
+  int reorder;
+};
+
+template <typename T>
+GaussResult<T> gauss(Matrix<T> const& a) {
+  auto b = a;
+  auto mat = b.get_matrix();
+  auto n_col = b.get_n_col();
+  auto n_row = b.get_n_row();
+  int offset = 0;
+  int line = 0;
+  int num_of_reorders = 0;
+
+  for (size_t i = 0; i != n_col; i++) {
+    // Reordering vector
+    for (size_t i = 0; i != n_row - 1; i++) {
+      int allowed_zero = i;
+      int zeros = 0;
+      for (size_t j = 0; j != n_col; j++) {
+        if (mat[i][j] != 0)
+          break;
+        else
+          ++zeros;
+      }
+
+      if (zeros == n_col) {
+        mat.erase(mat.begin() + i);
+        --n_row;
+        --n_col;
+        break;
+      }
+      if (zeros > allowed_zero) {
+        auto row = mat[i + 1];
+        mat[i + 1] = mat[i];
+        mat[i] = row;
+        ++num_of_reorders;
+      }
+    }
+
+    // Gauss
+    for (size_t i = line; i != n_row - 1; i++) {
+      if (mat[i + 1][offset] != 0 && mat[line][offset] != 0) {
+        double c =
+            -1.0 * (double(mat[i + 1][offset]) / double(mat[line][offset]));
+        for (size_t j = offset; j != n_col; j++) {
+          mat[i + 1][j] += c * mat[line][j];
+        }
+      }
+    }
+    ++line;
+    ++offset;
+  }
+
+  return {Matrix{mat}, num_of_reorders};
+}
+
+template <typename T>
+auto determinant(Matrix<T> const& a) {
+  auto b = gauss(a);
+  auto mat = b.r.get_matrix();
+  double det = 1;
+  for (size_t i = 0; i != b.r.get_n_row(); i++) {
+    for (size_t j = 0; j != b.r.get_n_col(); j++) {
+      if (mat[i][j] != 0) {
+        det *= mat[i][j];
+        break;
+      }
+    }
+  }
+
+  if (b.reorder % 2 != 0) {
+    det = -det;
+  }
+  return det;
+}
+
 TEST_CASE("Testing Matrix") {
   Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
   SUBCASE("Printing matrix") { a.print(); }
@@ -215,5 +295,22 @@ TEST_CASE("Testing Matrix") {
   SUBCASE("Create matrix from dimensions") {
     CHECK(create_matrix_from_dimensions<int>(2) ==
           Matrix<int>{{{0, 0}, {0, 0}}});
+  }
+  SUBCASE("Gauss") {
+    Matrix<double> b{{{1, 2, 3}, {1, 2, 3}, {0, 0, 1}}};
+    auto c = gauss(b);
+    c.r.print();
+
+    auto d = gauss(a);
+    d.r.print();
+
+    Matrix<double> f{{{1, 2, 3}, {1, 2, 3}, {1, 2, 2}}};
+    auto g = gauss(f);
+    g.r.print();
+  }
+  SUBCASE("Calculating determinant") {
+    Matrix<int> simple{{{1, 2}, {3, 4}}};
+    CHECK(determinant(simple) == -2);
+    CHECK(determinant(a) == -36);
   }
 }
