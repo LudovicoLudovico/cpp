@@ -132,12 +132,11 @@ class Matrix {
           ++zeros;
       }
 
-      // if (zeros == n_col_) {
-      //   matrix_.erase(matrix_.begin() + i);
-      //   --n_row_;
-      //   --n_col_;
-      //   break;
-      // }
+      if (zeros == n_col_) {
+        matrix_.erase(matrix_.begin() + i);
+        --n_row_;
+        break;
+      }
       if (zeros > allowed_zero) {
         auto row = matrix_[i + 1];
         matrix_[i + 1] = matrix_[i];
@@ -150,6 +149,7 @@ class Matrix {
   }
 
   auto determinant() {
+    auto c = *this;
     auto b = this->gauss();
     assert(b.get_n_row() == b.get_n_col());
     auto mat = b.get_matrix();
@@ -166,6 +166,7 @@ class Matrix {
     if (n_of_reorders_ % 2 != 0) {
       det = -det;
     }
+    *this = c;
     return det;
   }
 
@@ -173,7 +174,7 @@ class Matrix {
     int offset = 0;
     int line = 0;
 
-    for (size_t i = 0; i != n_col_; i++) {
+    for (size_t i = 0; i != n_row_; i++) {
       this->reorder();
       for (size_t i = line; i != n_row_ - 1; i++) {
         if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) {
@@ -195,6 +196,28 @@ class Matrix {
     this->remove_null_rows();
 
     return *this;
+  }
+
+  auto gauss_on_columns() {
+    this->transpose();
+    this->gauss();
+
+    return *this;
+  }
+
+  bool are_rows_indipendent() {
+    auto original_rows = n_row_;
+    this->gauss();
+
+    return (*this).n_row_ == original_rows;
+  }
+  bool are_columns_indipendent() {
+    auto original_cols = n_col_;
+    this->transpose();
+    this->gauss();
+    this->transpose();
+
+    return (*this).n_col_ == original_cols;
   }
 };
 
@@ -331,5 +354,18 @@ TEST_CASE("Testing Matrix") {
     Matrix<int> simple{{{1, 2}, {3, 4}}};
     CHECK(simple.determinant() == -2);
     CHECK(a.determinant() == -36);
+    simple.print();
+  }
+  SUBCASE("Are rows indipendent") {
+    Matrix<int> simple{{{1, 2}, {3, 4}}};
+    Matrix<int> b{{{1, 2}, {2, 4}}};
+    CHECK(simple.are_rows_indipendent());
+    CHECK(!b.are_rows_indipendent());
+  }
+  SUBCASE("Are columns indipendent") {
+    Matrix<int> simple{{{1, 2}, {2, 4}}};
+    Matrix<int> b{{{1, 2}, {2, 5}}};
+    CHECK(!simple.are_columns_indipendent());
+    CHECK(b.are_columns_indipendent());
   }
 }
