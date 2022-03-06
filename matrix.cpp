@@ -234,6 +234,20 @@ Matrix<T> create_matrix_from_dimensions(int n_col, int n_rows) {
   return Matrix{mat};
 }
 
+Matrix<int> create_identity(int size) {
+  std::vector<std::vector<int>> mat{};
+  for (size_t i = 0; i != size; i++) {
+    mat.push_back(std::vector<int>{});
+    for (size_t j = 0; j != size; j++) {
+      if (i == j)
+        mat[i].push_back(1);
+      else
+        mat[i].push_back(0);
+    }
+  }
+  return Matrix<int>{mat};
+}
+
 template <typename T, typename R>
 bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
   if (a.get_n_col() != b.get_n_col() || a.get_n_row() != b.get_n_row())
@@ -407,5 +421,8 @@ TEST_CASE("Testing Matrix") {
     Matrix<int> b{{{1, 2}, {2, 5}}};
     CHECK(!simple.are_columns_indipendent());
     CHECK(b.are_columns_indipendent());
+  }
+  SUBCASE("Creating identity matrix") {
+    CHECK(create_identity(3) == Matrix<int>{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}});
   }
 }
