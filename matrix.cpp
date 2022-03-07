@@ -66,7 +66,7 @@ class Matrix {
         init++;
       }
 
-      // Clean the matrix_rix
+      // Clean the matrix
       if (num_to_delete != 0) {
         if (isRow) {
           for (size_t i = 0; i != num_to_delete; i++) {
@@ -169,6 +169,7 @@ class Matrix {
     if (n_of_reorders_ % 2 != 0) {
       det = -det;
     }
+
     *this = c;
     return det;
   }
@@ -210,17 +211,19 @@ class Matrix {
 
   bool are_rows_indipendent() {
     auto original_rows = n_row_;
-    this->gauss();
+    auto c = *this;
+    c.gauss();
 
-    return (*this).n_row_ == original_rows;
+    return c.n_row_ == original_rows;
   }
   bool are_columns_indipendent() {
     auto original_cols = n_col_;
-    this->transpose();
-    this->gauss();
-    this->transpose();
+    auto c = *this;
+    c.transpose();
+    c.gauss();
+    c.transpose();
 
-    return (*this).n_col_ == original_cols;
+    return c.n_col_ == original_cols;
   }
 };
 
@@ -255,6 +258,7 @@ bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
 
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
+
   for (size_t i = 0; i != a.get_n_row(); i++) {
     for (size_t j = 0; j != a.get_n_col(); j++) {
       if (matA[i][j] != matB[i][j]) return false;
@@ -266,8 +270,10 @@ bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
 template <typename T, typename R>
 auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
   assert(a.get_n_col() == b.get_n_col() && a.get_n_row() == b.get_n_row());
+
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
+
   for (size_t i = 0; i != a.get_n_row(); i++) {
     for (size_t j = 0; j != a.get_n_col(); j++) {
       matA[i][j] += matB[i][j];
@@ -279,8 +285,10 @@ auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
 template <typename T, typename R>
 auto operator-(Matrix<T>& a, Matrix<R> const& b) {
   assert(a.get_n_col() == b.get_n_col() && a.get_n_row() == b.get_n_row());
+
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
+
   for (size_t i = 0; i != a.get_n_row(); i++) {
     for (size_t j = 0; j != a.get_n_col(); j++) {
       matA[i][j] -= matB[i][j];
@@ -292,6 +300,7 @@ auto operator-(Matrix<T>& a, Matrix<R> const& b) {
 template <typename T, typename R>
 auto operator*(Matrix<T>& a, R scalar) {
   auto matA = a.get_matrix();
+
   for (size_t i = 0; i != a.get_n_row(); i++) {
     for (size_t j = 0; j != a.get_n_col(); j++) {
       matA[i][j] *= scalar;
@@ -303,21 +312,20 @@ auto operator*(Matrix<T>& a, R scalar) {
 template <typename T, typename R>
 auto operator*(Matrix<T>& a, Matrix<R>& b) {
   assert(a.get_n_col() == b.get_n_row());
-  Matrix r = create_matrix_from_dimensions<int>(b.get_n_col(), a.get_n_row());
-  auto result = r.get_matrix();
+
+  std::vector<std::vector<T>> result{};
+
   auto matA = a.get_matrix();
   auto matB = b.get_matrix();
-  // auto c = b.transpose();
 
-  for (size_t i = 0; i != r.get_n_row(); i++) {
-    for (size_t j = 0; j != r.get_n_col(); j++) {
-      result[i][j] = 0;
-
+  for (size_t i = 0; i != a.get_n_row(); i++) {
+    std::vector<T> row(b.get_n_col());
+    result.push_back(row);
+    for (size_t j = 0; j != b.get_n_col(); j++) {
       for (size_t k = 0; k != a.get_n_col(); k++) {
         result[i][j] += matA[i][k] * matB[k][j];
       }
     }
-    Matrix{result}.print();
   }
 
   return Matrix{result};
@@ -336,7 +344,6 @@ auto operator/(Matrix<T>& a, R scalar) {
 
 TEST_CASE("Testing Matrix") {
   Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
-  // SUBCASE("Printing matrix") { a.print(); }
   SUBCASE("Calculating Trace") { CHECK(a.trace() == 21); }
   SUBCASE("Testing == operator") {
     Matrix<double> b{
@@ -391,24 +398,20 @@ TEST_CASE("Testing Matrix") {
           Matrix<int>{{{0, 0}, {0, 0}}});
   }
   SUBCASE("Gauss") {
-    Matrix<double> b{{{1, 2, 3}, {1, 2, 3}, {0, 0, 1}}};
-    b.print();
-    b.gauss().print();
+    CHECK(a.gauss() ==
+          Matrix<double>{
+              {{1, 2, 3, 5}, {0, -3, -6, -12}, {0, 0, 12, 21}, {0, 0, 0, -1}}});
 
-    std::cout << "--------------";
-    a.print();
-    a.gauss().print();
+    Matrix<double> b{{{1, 2, 3}, {1, 2, 3}, {0, 0, 1}}};
+    CHECK(b.gauss() == Matrix<double>{{{1, 2, 3}, {0, 0, 1}}});
 
     Matrix<double> f{{{1, 2, 3}, {1, 2, 2}, {1, 2, 2}}};
-    std::cout << "--------------";
-    f.print();
-    f.gauss().print();
+    CHECK(f.gauss() == Matrix<double>{{{1, 2, 3}, {0, 0, -1}}});
   }
   SUBCASE("Calculating determinant") {
     Matrix<int> simple{{{1, 2}, {3, 4}}};
     CHECK(simple.determinant() == -2);
     CHECK(a.determinant() == -36);
-    simple.print();
   }
   SUBCASE("Are rows indipendent") {
     Matrix<int> simple{{{1, 2}, {3, 4}}};
