@@ -61,7 +61,7 @@ class Statistics {
     T sum{};
     T w_sum{};
     for (auto& point : data_points_) {
-      if (point.Y <= 0) throw std::runtime_error{"Go fucking study"};
+      if (point.Y <= 0) throw std::runtime_error{"Cant have negative weights"};
       sum += point.X * point.Y;
       w_sum += point.Y;
     }
