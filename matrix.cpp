@@ -188,6 +188,29 @@ class Matrix {
     this->reorder();
     return *this;
   }
+  auto makePivotEqualOne() {
+    int line = n_row_ - 1;
+    for (size_t i = line; i != -1; i--) {
+      if (matrix_[line][line] != 1) {
+        double c = (matrix_[line][line] > 0) ? 1. : -1.;
+        for (size_t j = 0; j != n_col_; j++) {
+          matrix_[line][j] *= c;
+          matrix_[line][j] /= matrix_[line][line];
+        }
+      }
+    }
+  }
+  auto inverseGauss() {
+    for (int line = n_row_ - 1; line != 0; line--) {
+      for (size_t i = 0; i != line; i++) {
+        double c = -matrix_[i][line] / matrix_[line][line];
+
+        for (size_t j = 0; j != n_col_; j++) {
+          matrix_[i][j] += c * matrix_[line][j];
+        }
+      }
+    }
+  }
   auto invert() {
     if (n_col_ != n_row_)
       throw std::runtime_error{"Can't invert non square matrix"};
@@ -202,98 +225,15 @@ class Matrix {
     }
     n_col_ *= 2;
 
-    int line = 0;
-    int offset = 0;
-    for (size_t k = 0; k != (n_row_ - 1); k++) {
-      for (size_t i = line; i != n_row_ - 1; i++) {
-        if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) continue;
-
-        if (matrix_[i + 1][offset] != 0 && matrix_[line][offset] != 0) {
-          double c = -1.0 * (double(matrix_[i + 1][offset]) /
-                             double(matrix_[line][offset]));
-          for (size_t j = offset; j != n_col_; j++) {
-            matrix_[i + 1][j] += c * matrix_[line][j];
-          }
-        }
-      }
-      ++line;
-      ++offset;
-    }
-
-    // Reorder rows
-    for (size_t i = 0; i != n_row_; i++) {
-      int zeros = std::count(matrix_[i].begin(), matrix_[i].begin() + i + 1, 0);
-      if (zeros > i) {
-        auto row = matrix_[i];
-        matrix_[i] = matrix_[i + 1];
-        matrix_[i + 1] = row;
-      }
-    }
-
-    // Delete null rows
-    for (size_t i = n_row_ - 1; i != -1; i--) {
-      int zeros = 0;
-      for (size_t j = 0; j != n_col_; j++) {
-        if (matrix_[i][j] != 0)
-          break;
-        else
-          ++zeros;
-      }
-      if (zeros == n_col_) {
-        matrix_.erase(matrix_.begin() + i);
-        --n_row_;
-      }
-    }
-
-    // Correcting signs
-    for (size_t i = line; i != -1; i--) {
-      if (matrix_[line][line] < 0)
-        for (size_t j = 0; j != n_col_; j++) matrix_[line][j] *= -1;
-      if (matrix_[line][line] != 1) {
-        for (size_t j = 0; j != n_col_; j++)
-          matrix_[line][j] /= matrix_[line][line];
-      }
-    }
-
-    for (; line != 0; line--) {
-      for (size_t i = 0; i != line; i++) {
-        double c = -matrix_[i][line] / matrix_[line][line];
-
-        for (size_t j = 0; j != n_col_; j++) {
-          matrix_[i][j] += c * matrix_[line][j];
-        }
-      }
-    }
-
+    this->gauss();
+    this->makePivotEqualOne();
+    this->print();
+    this->inverseGauss();
     this->removeNColsFromLeft(n_col_ / 2);
 
     return *this;
   }
 };
-
-Matrix<int> create_identity(int size) {
-  std::vector<std::vector<int>> mat{};
-  for (size_t i = 0; i != size; i++) {
-    mat.push_back(std::vector<int>{});
-    for (size_t j = 0; j != size; j++) {
-      if (i == j)
-        mat[i].push_back(1);
-      else
-        mat[i].push_back(0);
-    }
-  }
-  return Matrix<int>{mat};
-}
-
-template <typename T>
-Matrix<T> create_matrix_from_dimensions(int n_col, int n_rows) {
-  std::vector<std::vector<T>> mat{};
-  for (size_t i = 0; i != n_rows; i++) {
-    std::vector<T> row(n_col);
-    mat.push_back(row);
-  }
-  return Matrix{mat};
-}
 
 template <typename T, typename R>
 bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
@@ -434,10 +374,6 @@ TEST_CASE("Testing Matrix") {
               {{1, 4, 7, 1}, {2, 5, 8, -3}, {3, 6, 9, 5}, {5, 8, 10, 6}}});
     Matrix<int> b{{{1, 2}, {3, 4}, {4, 5}}};
     CHECK(b.transpose() == Matrix<int>{{{1, 3, 4}, {2, 4, 5}}});
-  }
-  SUBCASE("Create matrix from dimensions") {
-    CHECK(create_matrix_from_dimensions<int>(2, 2) ==
-          Matrix<int>{{{0, 0}, {0, 0}}});
   }
   SUBCASE("Calculating determinant") {
     Matrix<int> simple{{{1, 2}, {3, 4}}};
