@@ -27,6 +27,7 @@ class Matrix {
   int getRow() const { return n_row_; }
   int getCol() const { return n_col_; }
   auto getMatrix() const { return matrix_; }
+
   void print() const {
     std::cout << '\n';
     for (size_t i = 0; i != n_row_; i++) {
@@ -37,7 +38,6 @@ class Matrix {
     }
     std::cout << '\n';
   }
-
   T trace() const {
     assert(n_col_ == n_row_);
     T trace = 0;
@@ -46,7 +46,6 @@ class Matrix {
     }
     return trace;
   }
-
   bool isSymmetric() const {
     if (n_col_ != n_row_) return false;
     for (size_t i = 0; i != n_row_; i++) {
@@ -56,7 +55,6 @@ class Matrix {
     }
     return true;
   }
-
   void makeSquare() {
     if (n_col_ > n_row_) {
       for (size_t i = 0; i != (n_col_ - n_row_); i++) {
@@ -99,7 +97,6 @@ class Matrix {
       }
     }
   }
-
   void removeNRowsFromBottom(int num_to_delete) {
     for (size_t i = 0; i != num_to_delete; i++) {
       matrix_.pop_back();
@@ -114,7 +111,14 @@ class Matrix {
     }
     n_col_ -= num_to_delete;
   }
-
+  void removeNColsFromLeft(int num_to_delete) {
+    for (size_t i = 0; i != n_row_; i++) {
+      for (size_t j = 0; j != num_to_delete; j++) {
+        matrix_[i].erase(matrix_[i].begin());
+      }
+    }
+    n_col_ -= num_to_delete;
+  }
   auto transpose() {
     bool hasRowsToBeDeleted = n_col_ < n_row_;
 
@@ -133,7 +137,6 @@ class Matrix {
 
     return *this;
   }
-
   double determinant() {
     if (n_col_ != n_row_)
       throw std::runtime_error{
@@ -161,16 +164,14 @@ class Matrix {
     *this = c;
     return det;
   }
-
   auto gauss() {
     int line = 0;
     int offset = 0;
 
     for (size_t k = 0; k != (n_row_ - 1); k++) {
       for (size_t i = line; i != n_row_ - 1; i++) {
-        if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) {
-          offset += 1;
-        }
+        if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) continue;
+
         if (matrix_[i + 1][offset] != 0 && matrix_[line][offset] != 0) {
           double c = -1.0 * (double(matrix_[i + 1][offset]) /
                              double(matrix_[line][offset]));
@@ -187,17 +188,88 @@ class Matrix {
     this->reorder();
     return *this;
   }
-};
+  auto invert() {
+    if (n_col_ != n_row_)
+      throw std::runtime_error{"Can't invert non square matrix"};
 
-template <typename T>
-Matrix<T> create_matrix_from_dimensions(int n_col, int n_rows) {
-  std::vector<std::vector<T>> mat{};
-  for (size_t i = 0; i != n_rows; i++) {
-    std::vector<T> row(n_col);
-    mat.push_back(row);
+    for (size_t i = 0; i != n_row_; i++) {
+      for (size_t j = 0; j != n_col_; j++) {
+        if (i == j)
+          matrix_[i].push_back(1);
+        else
+          matrix_[i].push_back(0);
+      }
+    }
+    n_col_ *= 2;
+
+    int line = 0;
+    int offset = 0;
+    for (size_t k = 0; k != (n_row_ - 1); k++) {
+      for (size_t i = line; i != n_row_ - 1; i++) {
+        if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) continue;
+
+        if (matrix_[i + 1][offset] != 0 && matrix_[line][offset] != 0) {
+          double c = -1.0 * (double(matrix_[i + 1][offset]) /
+                             double(matrix_[line][offset]));
+          for (size_t j = offset; j != n_col_; j++) {
+            matrix_[i + 1][j] += c * matrix_[line][j];
+          }
+        }
+      }
+      ++line;
+      ++offset;
+    }
+
+    // Reorder rows
+    for (size_t i = 0; i != n_row_; i++) {
+      int zeros = std::count(matrix_[i].begin(), matrix_[i].begin() + i + 1, 0);
+      if (zeros > i) {
+        auto row = matrix_[i];
+        matrix_[i] = matrix_[i + 1];
+        matrix_[i + 1] = row;
+      }
+    }
+
+    // Delete null rows
+    for (size_t i = n_row_ - 1; i != -1; i--) {
+      int zeros = 0;
+      for (size_t j = 0; j != n_col_; j++) {
+        if (matrix_[i][j] != 0)
+          break;
+        else
+          ++zeros;
+      }
+      if (zeros == n_col_) {
+        matrix_.erase(matrix_.begin() + i);
+        --n_row_;
+      }
+    }
+
+    // Correcting signs
+    for (size_t i = line; i != -1; i--) {
+      if (matrix_[line][line] < 0)
+        for (size_t j = 0; j != n_col_; j++) matrix_[line][j] *= -1;
+      if (matrix_[line][line] != 1) {
+        for (size_t j = 0; j != n_col_; j++)
+          matrix_[line][j] /= matrix_[line][line];
+      }
+    }
+
+    for (; line != 0; line--) {
+      for (size_t i = 0; i != line; i++) {
+        double c = -matrix_[i][line] / matrix_[line][line];
+
+        for (size_t j = 0; j != n_col_; j++) {
+          matrix_[i][j] += c * matrix_[line][j];
+        }
+      }
+    }
+
+    this->removeNColsFromLeft(n_col_ / 2);
+
+    return *this;
   }
-  return Matrix{mat};
-}
+};
 
 Matrix<int> create_identity(int size) {
   std::vector<std::vector<int>> mat{};
@@ -211,6 +283,16 @@ Matrix<int> create_identity(int size) {
     }
   }
   return Matrix<int>{mat};
+}
+
+template <typename T>
+Matrix<T> create_matrix_from_dimensions(int n_col, int n_rows) {
+  std::vector<std::vector<T>> mat{};
+  for (size_t i = 0; i != n_rows; i++) {
+    std::vector<T> row(n_col);
+    mat.push_back(row);
+  }
+  return Matrix{mat};
 }
 
 template <typename T, typename R>
@@ -363,7 +445,14 @@ TEST_CASE("Testing Matrix") {
     CHECK(a.determinant() == -36);
   }
 
-  SUBCASE("Creating identity matrix") {
-    CHECK(create_identity(3) == Matrix<int>{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}});
+  SUBCASE("Inverting") {
+    CHECK(Matrix<int>{{{1, 2}, {3, 5}}}.invert() ==
+          Matrix<int>{{{-5, 2}, {3, -1}}});
+
+    CHECK(Matrix<int>{{{1, 0, 1}, {0, 1, 1}, {1, 1, 1}}}.invert() ==
+          Matrix<int>{{{0, -1, 1}, {-1, 0, 1}, {1, 1, -1}}});
+
+    CHECK(Matrix<int>{{{1, 2, -3}, {0, 1, 2}, {0, 0, 1}}}.invert() ==
+          Matrix<int>{{{1, -2, 7}, {0, 1, -2}, {0, 0, 1}}});
   }
 }
