@@ -13,17 +13,20 @@ class Matrix {
   std::vector<std::vector<T>> matrix_{};
   int n_row_{};
   int n_col_{};
+  int original_col_{};
+  int original_row_{};
   int n_of_reorders_{};
 
  public:
   Matrix(std::vector<std::vector<T>> const& mat)
       : matrix_{mat},
         n_row_{static_cast<int>(mat.size())},
-        n_col_{static_cast<int>(mat[0].size())} {}
-  int get_n_row() const { return n_row_; };
-  int get_n_col() const { return n_col_; };
-  auto get_matrix() const { return matrix_; };
-
+        original_row_{static_cast<int>(mat.size())},
+        n_col_{static_cast<int>(mat[0].size())},
+        original_col_{static_cast<int>(mat[0].size())} {}
+  int getRow() const { return n_row_; }
+  int getCol() const { return n_col_; }
+  auto getMatrix() const { return matrix_; }
   void print() const {
     std::cout << '\n';
     for (size_t i = 0; i != n_row_; i++) {
@@ -54,111 +57,98 @@ class Matrix {
     return true;
   }
 
-  auto transpose(int num_to_delete = 0, bool isRow = true) {
-    if (n_col_ == n_row_) {
-      int init = 0;
-      for (size_t i = 0; i != n_row_; i++) {
-        for (size_t j = init; j != n_col_; j++) {
-          T a = matrix_[i][j];
-          matrix_[i][j] = matrix_[j][i];
-          matrix_[j][i] = a;
-        }
-        init++;
-      }
-
-      // Clean the matrix
-      if (num_to_delete != 0) {
-        if (isRow) {
-          for (size_t i = 0; i != num_to_delete; i++) {
-            matrix_.pop_back();
-          }
-          n_row_ -= num_to_delete;
-        } else {
-          for (size_t i = 0; i != n_row_; i++) {
-            for (size_t j = 0; j != num_to_delete; j++) {
-              matrix_[i].pop_back();
-            }
-          }
-          n_col_ -= num_to_delete;
-        }
-      }
-
-      return *this;
-    } else if (n_col_ > n_row_) {
+  void makeSquare() {
+    if (n_col_ > n_row_) {
       for (size_t i = 0; i != (n_col_ - n_row_); i++) {
-        std::vector<int> row(5);
+        std::vector<int> row(n_col_);
         matrix_.push_back(row);
       }
-      int diff = n_col_ - n_row_;
       n_row_ = n_col_;
-      return this->transpose(diff, false);
     } else {
       for (size_t i = 0; i != n_row_; i++) {
         for (size_t j = 0; j != (n_row_ - n_col_); j++) {
           matrix_[i].push_back(0);
         }
       }
-      int diff = n_row_ - n_col_;
       n_col_ = n_row_;
-      return this->transpose(diff, true);
     }
   }
-
-  auto remove_null_rows() {
-    for (size_t i = 0; i != n_row_; i++) {
-      int zeros = 0;
-      for (size_t j = 0; j != n_col_; j++) {
-        if (matrix_[i][j] != 0)
-          break;
-        else
-          ++zeros;
-      }
-      if (zeros == n_col_) {
-        matrix_.erase(matrix_.begin() + i);
-        --n_row_;
-        break;
-      }
-    }
-
-    return *this;
-  }
-
-  auto reorder() {
+  void reorder() {
     for (size_t i = 0; i != n_row_ - 1; i++) {
-      int allowed_zero = i;
-      int zeros = 0;
-      for (size_t j = 0; j != n_col_; j++) {
-        if (matrix_[i][j] != 0)
-          break;
-        else
-          ++zeros;
-      }
-
-      if (zeros == n_col_) {
-        matrix_.erase(matrix_.begin() + i);
-        --n_row_;
-        break;
-      }
-      if (zeros > allowed_zero) {
-        auto row = matrix_[i + 1];
-        matrix_[i + 1] = matrix_[i];
-        matrix_[i] = row;
+      int zeros = std::count(matrix_[i].begin(), matrix_[i].begin() + i + 1, 0);
+      if (zeros > i) {
+        auto row = matrix_[i];
+        matrix_[i] = matrix_[i + 1];
+        matrix_[i + 1] = row;
         ++n_of_reorders_;
       }
     }
+  }
+  void removeNullRows() {
+    for (size_t i = n_row_ - 1; i != -1; i--) {
+      int zeros = 0;
+      for (size_t j = 0; j != n_col_; j++) {
+        if (matrix_[i][j] != 0)
+          break;
+        else
+          ++zeros;
+      }
+      if (zeros == n_col_) {
+        matrix_.erase(matrix_.begin() + i);
+        --n_row_;
+      }
+    }
+  }
+
+  void removeNRowsFromBottom(int num_to_delete) {
+    for (size_t i = 0; i != num_to_delete; i++) {
+      matrix_.pop_back();
+    }
+    n_row_ -= num_to_delete;
+  }
+  void removeNColsFromRight(int num_to_delete) {
+    for (size_t i = 0; i != n_row_; i++) {
+      for (size_t j = 0; j != num_to_delete; j++) {
+        matrix_[i].pop_back();
+      }
+    }
+    n_col_ -= num_to_delete;
+  }
+
+  auto transpose() {
+    bool hasRowsToBeDeleted = n_col_ < n_row_;
+
+    this->makeSquare();
+
+    for (size_t i = 0; i != n_row_; i++) {
+      for (size_t j = i; j != n_col_; j++) {
+        T a = matrix_[i][j];
+        matrix_[i][j] = matrix_[j][i];
+        matrix_[j][i] = a;
+      }
+    }
+
+    if (hasRowsToBeDeleted) this->removeNRowsFromBottom(n_col_ - original_col_);
+    if (!hasRowsToBeDeleted) this->removeNColsFromRight(n_row_ - original_row_);
 
     return *this;
   }
 
-  auto determinant() {
-    assert(n_col_ == n_row_);
+  double determinant() {
+    if (n_col_ != n_row_)
+      throw std::runtime_error{
+          "Can't calculate determinant on non-square matrix"};
+
     auto c = *this;
     auto b = this->gauss();
-    assert(b.get_n_row() == b.get_n_col());
-    auto mat = b.get_matrix();
+
+    if (b.getRow() != b.getCol()) return 0;
+
+    auto mat = b.getMatrix();
+
     double det = 1;
-    for (size_t i = 0; i != b.get_n_row(); i++) {
-      for (size_t j = 0; j != b.get_n_col(); j++) {
+    for (size_t i = 0; i != b.getRow(); i++) {
+      for (size_t j = 0; j != b.getCol(); j++) {
         if (mat[i][j] != 0) {
           det *= mat[i][j];
           break;
@@ -166,20 +156,17 @@ class Matrix {
       }
     }
 
-    if (n_of_reorders_ % 2 != 0) {
-      det = -det;
-    }
+    if (n_of_reorders_ % 2 != 0) det = -det;
 
     *this = c;
     return det;
   }
 
   auto gauss() {
-    int offset = 0;
     int line = 0;
+    int offset = 0;
 
-    for (size_t i = 0; i != n_row_; i++) {
-      this->reorder();
+    for (size_t k = 0; k != (n_row_ - 1); k++) {
       for (size_t i = line; i != n_row_ - 1; i++) {
         if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) {
           offset += 1;
@@ -196,34 +183,9 @@ class Matrix {
       ++offset;
     }
 
+    this->removeNullRows();
     this->reorder();
-    this->remove_null_rows();
-
     return *this;
-  }
-
-  auto gauss_on_columns() {
-    this->transpose();
-    this->gauss();
-
-    return *this;
-  }
-
-  bool are_rows_indipendent() {
-    auto original_rows = n_row_;
-    auto c = *this;
-    c.gauss();
-
-    return c.n_row_ == original_rows;
-  }
-  bool are_columns_indipendent() {
-    auto original_cols = n_col_;
-    auto c = *this;
-    c.transpose();
-    c.gauss();
-    c.transpose();
-
-    return c.n_col_ == original_cols;
   }
 };
 
@@ -253,14 +215,13 @@ Matrix<int> create_identity(int size) {
 
 template <typename T, typename R>
 bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
-  if (a.get_n_col() != b.get_n_col() || a.get_n_row() != b.get_n_row())
-    return false;
+  if (a.getCol() != b.getCol() || a.getRow() != b.getRow()) return false;
 
-  auto matA = a.get_matrix();
-  auto matB = b.get_matrix();
+  auto matA = a.getMatrix();
+  auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.get_n_row(); i++) {
-    for (size_t j = 0; j != a.get_n_col(); j++) {
+  for (size_t i = 0; i != a.getRow(); i++) {
+    for (size_t j = 0; j != a.getCol(); j++) {
       if (matA[i][j] != matB[i][j]) return false;
     }
   }
@@ -269,13 +230,13 @@ bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
 
 template <typename T, typename R>
 auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
-  assert(a.get_n_col() == b.get_n_col() && a.get_n_row() == b.get_n_row());
+  assert(a.getCol() == b.getCol() && a.getRow() == b.getRow());
 
-  auto matA = a.get_matrix();
-  auto matB = b.get_matrix();
+  auto matA = a.getMatrix();
+  auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.get_n_row(); i++) {
-    for (size_t j = 0; j != a.get_n_col(); j++) {
+  for (size_t i = 0; i != a.getRow(); i++) {
+    for (size_t j = 0; j != a.getCol(); j++) {
       matA[i][j] += matB[i][j];
     }
   }
@@ -284,13 +245,13 @@ auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
 
 template <typename T, typename R>
 auto operator-(Matrix<T>& a, Matrix<R> const& b) {
-  assert(a.get_n_col() == b.get_n_col() && a.get_n_row() == b.get_n_row());
+  assert(a.getCol() == b.getCol() && a.getRow() == b.getRow());
 
-  auto matA = a.get_matrix();
-  auto matB = b.get_matrix();
+  auto matA = a.getMatrix();
+  auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.get_n_row(); i++) {
-    for (size_t j = 0; j != a.get_n_col(); j++) {
+  for (size_t i = 0; i != a.getRow(); i++) {
+    for (size_t j = 0; j != a.getCol(); j++) {
       matA[i][j] -= matB[i][j];
     }
   }
@@ -299,10 +260,10 @@ auto operator-(Matrix<T>& a, Matrix<R> const& b) {
 
 template <typename T, typename R>
 auto operator*(Matrix<T>& a, R scalar) {
-  auto matA = a.get_matrix();
+  auto matA = a.getMatrix();
 
-  for (size_t i = 0; i != a.get_n_row(); i++) {
-    for (size_t j = 0; j != a.get_n_col(); j++) {
+  for (size_t i = 0; i != a.getRow(); i++) {
+    for (size_t j = 0; j != a.getCol(); j++) {
       matA[i][j] *= scalar;
     }
   }
@@ -311,18 +272,18 @@ auto operator*(Matrix<T>& a, R scalar) {
 
 template <typename T, typename R>
 auto operator*(Matrix<T>& a, Matrix<R>& b) {
-  assert(a.get_n_col() == b.get_n_row());
+  assert(a.getCol() == b.getRow());
 
   std::vector<std::vector<T>> result{};
 
-  auto matA = a.get_matrix();
-  auto matB = b.get_matrix();
+  auto matA = a.getMatrix();
+  auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.get_n_row(); i++) {
-    std::vector<T> row(b.get_n_col());
+  for (size_t i = 0; i != a.getRow(); i++) {
+    std::vector<T> row(b.getCol());
     result.push_back(row);
-    for (size_t j = 0; j != b.get_n_col(); j++) {
-      for (size_t k = 0; k != a.get_n_col(); k++) {
+    for (size_t j = 0; j != b.getCol(); j++) {
+      for (size_t k = 0; k != a.getCol(); k++) {
         result[i][j] += matA[i][k] * matB[k][j];
       }
     }
@@ -333,9 +294,9 @@ auto operator*(Matrix<T>& a, Matrix<R>& b) {
 
 template <typename T, typename R>
 auto operator/(Matrix<T>& a, R scalar) {
-  auto matA = a.get_matrix();
-  for (size_t i = 0; i != a.get_n_row(); i++) {
-    for (size_t j = 0; j != a.get_n_col(); j++) {
+  auto matA = a.getMatrix();
+  for (size_t i = 0; i != a.getRow(); i++) {
+    for (size_t j = 0; j != a.getCol(); j++) {
       matA[i][j] /= scalar;
     }
   }
@@ -390,41 +351,18 @@ TEST_CASE("Testing Matrix") {
           Matrix<int>{
               {{1, 4, 7, 1}, {2, 5, 8, -3}, {3, 6, 9, 5}, {5, 8, 10, 6}}});
     Matrix<int> b{{{1, 2}, {3, 4}, {4, 5}}};
-
     CHECK(b.transpose() == Matrix<int>{{{1, 3, 4}, {2, 4, 5}}});
   }
   SUBCASE("Create matrix from dimensions") {
     CHECK(create_matrix_from_dimensions<int>(2, 2) ==
           Matrix<int>{{{0, 0}, {0, 0}}});
   }
-  SUBCASE("Gauss") {
-    CHECK(a.gauss() ==
-          Matrix<double>{
-              {{1, 2, 3, 5}, {0, -3, -6, -12}, {0, 0, 12, 21}, {0, 0, 0, -1}}});
-
-    Matrix<double> b{{{1, 2, 3}, {1, 2, 3}, {0, 0, 1}}};
-    CHECK(b.gauss() == Matrix<double>{{{1, 2, 3}, {0, 0, 1}}});
-
-    Matrix<double> f{{{1, 2, 3}, {1, 2, 2}, {1, 2, 2}}};
-    CHECK(f.gauss() == Matrix<double>{{{1, 2, 3}, {0, 0, -1}}});
-  }
   SUBCASE("Calculating determinant") {
     Matrix<int> simple{{{1, 2}, {3, 4}}};
     CHECK(simple.determinant() == -2);
     CHECK(a.determinant() == -36);
   }
-  SUBCASE("Are rows indipendent") {
-    Matrix<int> simple{{{1, 2}, {3, 4}}};
-    Matrix<int> b{{{1, 2}, {2, 4}}};
-    CHECK(simple.are_rows_indipendent());
-    CHECK(!b.are_rows_indipendent());
-  }
-  SUBCASE("Are columns indipendent") {
-    Matrix<int> simple{{{1, 2}, {2, 4}}};
-    Matrix<int> b{{{1, 2}, {2, 5}}};
-    CHECK(!simple.are_columns_indipendent());
-    CHECK(b.are_columns_indipendent());
-  }
+
   SUBCASE("Creating identity matrix") {
     CHECK(create_identity(3) == Matrix<int>{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}});
   }
