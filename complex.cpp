@@ -1,4 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 
@@ -113,6 +114,7 @@ double calculate_solution(double b, double c) { return -c / b; }
 TEST_CASE("Testing Complex") {
   SUBCASE("Testing .real()") {
     Complex<int> r{3, 4};
+
     CHECK(r.real() == 3);
 
     Complex<double> a{3.2, 4.5};

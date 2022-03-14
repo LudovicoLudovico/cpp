@@ -21,17 +21,17 @@ class Matrix {
   Matrix(std::vector<std::vector<T>> const& mat)
       : matrix_{mat},
         n_row_{static_cast<int>(mat.size())},
-        original_row_{static_cast<int>(mat.size())},
         n_col_{static_cast<int>(mat[0].size())},
-        original_col_{static_cast<int>(mat[0].size())} {}
+        original_col_{static_cast<int>(mat[0].size())},
+        original_row_{static_cast<int>(mat.size())} {}
   int getRow() const { return n_row_; }
   int getCol() const { return n_col_; }
   auto getMatrix() const { return matrix_; }
 
   void print() const {
     std::cout << '\n';
-    for (size_t i = 0; i != n_row_; i++) {
-      for (size_t j = 0; j != n_col_; j++) {
+    for (int i = 0; i != n_row_; i++) {
+      for (int j = 0; j != n_col_; j++) {
         std::cout << "|    " << matrix_[i][j] << "    |";
       }
       std::cout << '\n';
@@ -39,17 +39,19 @@ class Matrix {
     std::cout << '\n';
   }
   T trace() const {
-    assert(n_col_ == n_row_);
+    if (n_col_ != n_row_)
+      throw std::runtime_error{"Can't calculate trace on non-square matrix"};
+
     T trace = 0;
-    for (size_t i = 0; i < n_row_; i++) {
-      trace += matrix_[i][i];
-    }
+    for (int i = 0; i < n_row_; i++) trace += matrix_[i][i];
+
     return trace;
   }
   bool isSymmetric() const {
     if (n_col_ != n_row_) return false;
-    for (size_t i = 0; i != n_row_; i++) {
-      for (size_t j = 0; j != n_col_; j++) {
+
+    for (int i = 0; i != n_row_; i++) {
+      for (int j = 0; j != n_col_; j++) {
         if (matrix_[i][j] != matrix_[j][i]) return false;
       }
     }
@@ -57,14 +59,14 @@ class Matrix {
   }
   void makeSquare() {
     if (n_col_ > n_row_) {
-      for (size_t i = 0; i != (n_col_ - n_row_); i++) {
+      for (int i = 0; i != (n_col_ - n_row_); i++) {
         std::vector<int> row(n_col_);
         matrix_.push_back(row);
       }
       n_row_ = n_col_;
     } else {
-      for (size_t i = 0; i != n_row_; i++) {
-        for (size_t j = 0; j != (n_row_ - n_col_); j++) {
+      for (int i = 0; i != n_row_; i++) {
+        for (int j = 0; j != (n_row_ - n_col_); j++) {
           matrix_[i].push_back(0);
         }
       }
@@ -72,7 +74,7 @@ class Matrix {
     }
   }
   void reorder() {
-    for (size_t i = 0; i != n_row_ - 1; i++) {
+    for (int i = 0; i != n_row_ - 1; i++) {
       int zeros = std::count(matrix_[i].begin(), matrix_[i].begin() + i + 1, 0);
       if (zeros > i) {
         auto row = matrix_[i];
@@ -83,9 +85,9 @@ class Matrix {
     }
   }
   void removeNullRows() {
-    for (size_t i = n_row_ - 1; i != -1; i--) {
+    for (int i = n_row_ - 1; i != -1; i--) {
       int zeros = 0;
-      for (size_t j = 0; j != n_col_; j++) {
+      for (int j = 0; j != n_col_; j++) {
         if (matrix_[i][j] != 0)
           break;
         else
@@ -98,22 +100,22 @@ class Matrix {
     }
   }
   void removeNRowsFromBottom(int num_to_delete) {
-    for (size_t i = 0; i != num_to_delete; i++) {
+    for (int i = 0; i != num_to_delete; i++) {
       matrix_.pop_back();
     }
     n_row_ -= num_to_delete;
   }
   void removeNColsFromRight(int num_to_delete) {
-    for (size_t i = 0; i != n_row_; i++) {
-      for (size_t j = 0; j != num_to_delete; j++) {
+    for (int i = 0; i != n_row_; i++) {
+      for (int j = 0; j != num_to_delete; j++) {
         matrix_[i].pop_back();
       }
     }
     n_col_ -= num_to_delete;
   }
   void removeNColsFromLeft(int num_to_delete) {
-    for (size_t i = 0; i != n_row_; i++) {
-      for (size_t j = 0; j != num_to_delete; j++) {
+    for (int i = 0; i != n_row_; i++) {
+      for (int j = 0; j != num_to_delete; j++) {
         matrix_[i].erase(matrix_[i].begin());
       }
     }
@@ -124,8 +126,8 @@ class Matrix {
 
     this->makeSquare();
 
-    for (size_t i = 0; i != n_row_; i++) {
-      for (size_t j = i; j != n_col_; j++) {
+    for (int i = 0; i != n_row_; i++) {
+      for (int j = i; j != n_col_; j++) {
         T a = matrix_[i][j];
         matrix_[i][j] = matrix_[j][i];
         matrix_[j][i] = a;
@@ -150,8 +152,8 @@ class Matrix {
     auto mat = b.getMatrix();
 
     double det = 1;
-    for (size_t i = 0; i != b.getRow(); i++) {
-      for (size_t j = 0; j != b.getCol(); j++) {
+    for (int i = 0; i != b.getRow(); i++) {
+      for (int j = 0; j != b.getCol(); j++) {
         if (mat[i][j] != 0) {
           det *= mat[i][j];
           break;
@@ -168,14 +170,14 @@ class Matrix {
     int line = 0;
     int offset = 0;
 
-    for (size_t k = 0; k != (n_row_ - 1); k++) {
-      for (size_t i = line; i != n_row_ - 1; i++) {
+    for (int k = 0; k != (n_row_ - 1); k++) {
+      for (int i = line; i != n_row_ - 1; i++) {
         if (matrix_[i + 1][offset] == 0 && matrix_[i][offset] == 0) continue;
 
         if (matrix_[i + 1][offset] != 0 && matrix_[line][offset] != 0) {
           double c = -1.0 * (double(matrix_[i + 1][offset]) /
                              double(matrix_[line][offset]));
-          for (size_t j = offset; j != n_col_; j++) {
+          for (int j = offset; j != n_col_; j++) {
             matrix_[i + 1][j] += c * matrix_[line][j];
           }
         }
@@ -190,10 +192,10 @@ class Matrix {
   }
   auto makePivotEqualOne() {
     int line = n_row_ - 1;
-    for (size_t i = line; i != -1; i--) {
+    for (int i = line; i != -1; i--) {
       if (matrix_[line][line] != 1) {
         double c = (matrix_[line][line] > 0) ? 1. : -1.;
-        for (size_t j = 0; j != n_col_; j++) {
+        for (int j = 0; j != n_col_; j++) {
           matrix_[line][j] *= c;
           matrix_[line][j] /= matrix_[line][line];
         }
@@ -202,10 +204,10 @@ class Matrix {
   }
   auto inverseGauss() {
     for (int line = n_row_ - 1; line != 0; line--) {
-      for (size_t i = 0; i != line; i++) {
+      for (int i = 0; i != line; i++) {
         double c = -matrix_[i][line] / matrix_[line][line];
 
-        for (size_t j = 0; j != n_col_; j++) {
+        for (int j = 0; j != n_col_; j++) {
           matrix_[i][j] += c * matrix_[line][j];
         }
       }
@@ -215,8 +217,9 @@ class Matrix {
     if (n_col_ != n_row_)
       throw std::runtime_error{"Can't invert non square matrix"};
 
-    for (size_t i = 0; i != n_row_; i++) {
-      for (size_t j = 0; j != n_col_; j++) {
+    // Adding identity matrix on the right
+    for (int i = 0; i != n_row_; i++) {
+      for (int j = 0; j != n_col_; j++) {
         if (i == j)
           matrix_[i].push_back(1);
         else
@@ -227,7 +230,6 @@ class Matrix {
 
     this->gauss();
     this->makePivotEqualOne();
-    this->print();
     this->inverseGauss();
     this->removeNColsFromLeft(n_col_ / 2);
 
@@ -242,23 +244,28 @@ bool operator==(Matrix<T> const& a, Matrix<R> const& b) {
   auto matA = a.getMatrix();
   auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.getRow(); i++) {
-    for (size_t j = 0; j != a.getCol(); j++) {
+  for (int i = 0; i != a.getRow(); i++) {
+    for (int j = 0; j != a.getCol(); j++) {
       if (matA[i][j] != matB[i][j]) return false;
     }
   }
   return true;
 }
+template <typename T, typename R>
+bool operator!=(Matrix<T> const& a, Matrix<R> const& b) {
+  return !(a == b);
+}
 
 template <typename T, typename R>
 auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
-  assert(a.getCol() == b.getCol() && a.getRow() == b.getRow());
+  if (a.getCol() != b.getCol() || a.getRow() != b.getRow())
+    throw std::runtime_error{"Can't perform operation on the given matrices"};
 
   auto matA = a.getMatrix();
   auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.getRow(); i++) {
-    for (size_t j = 0; j != a.getCol(); j++) {
+  for (int i = 0; i != a.getRow(); i++) {
+    for (int j = 0; j != a.getCol(); j++) {
       matA[i][j] += matB[i][j];
     }
   }
@@ -267,13 +274,14 @@ auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
 
 template <typename T, typename R>
 auto operator-(Matrix<T>& a, Matrix<R> const& b) {
-  assert(a.getCol() == b.getCol() && a.getRow() == b.getRow());
+  if (a.getCol() != b.getCol() || a.getRow() != b.getRow())
+    throw std::runtime_error{"Can't perform operation on the given matrices"};
 
   auto matA = a.getMatrix();
   auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.getRow(); i++) {
-    for (size_t j = 0; j != a.getCol(); j++) {
+  for (int i = 0; i != a.getRow(); i++) {
+    for (int j = 0; j != a.getCol(); j++) {
       matA[i][j] -= matB[i][j];
     }
   }
@@ -284,8 +292,8 @@ template <typename T, typename R>
 auto operator*(Matrix<T>& a, R scalar) {
   auto matA = a.getMatrix();
 
-  for (size_t i = 0; i != a.getRow(); i++) {
-    for (size_t j = 0; j != a.getCol(); j++) {
+  for (int i = 0; i != a.getRow(); i++) {
+    for (int j = 0; j != a.getCol(); j++) {
       matA[i][j] *= scalar;
     }
   }
@@ -294,18 +302,20 @@ auto operator*(Matrix<T>& a, R scalar) {
 
 template <typename T, typename R>
 auto operator*(Matrix<T>& a, Matrix<R>& b) {
-  assert(a.getCol() == b.getRow());
+  if (a.getCol() != b.getRow())
+    throw std::runtime_error{"Can't multipy the given matrices"};
 
   std::vector<std::vector<T>> result{};
 
   auto matA = a.getMatrix();
   auto matB = b.getMatrix();
 
-  for (size_t i = 0; i != a.getRow(); i++) {
+  for (int i = 0; i != a.getRow(); i++) {
     std::vector<T> row(b.getCol());
     result.push_back(row);
-    for (size_t j = 0; j != b.getCol(); j++) {
-      for (size_t k = 0; k != a.getCol(); k++) {
+
+    for (int j = 0; j != b.getCol(); j++) {
+      for (int k = 0; k != a.getCol(); k++) {
         result[i][j] += matA[i][k] * matB[k][j];
       }
     }
@@ -317,16 +327,19 @@ auto operator*(Matrix<T>& a, Matrix<R>& b) {
 template <typename T, typename R>
 auto operator/(Matrix<T>& a, R scalar) {
   auto matA = a.getMatrix();
-  for (size_t i = 0; i != a.getRow(); i++) {
-    for (size_t j = 0; j != a.getCol(); j++) {
-      matA[i][j] /= scalar;
+
+  for (auto& row : matA) {
+    for (int j = 0; j != a.getCol(); j++) {
+      row[j] /= scalar;
     }
   }
+
   return Matrix{matA};
 }
 
 TEST_CASE("Testing Matrix") {
   Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+
   SUBCASE("Calculating Trace") { CHECK(a.trace() == 21); }
   SUBCASE("Testing == operator") {
     Matrix<double> b{
