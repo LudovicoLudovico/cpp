@@ -24,10 +24,6 @@ class Matrix {
         original_col_{static_cast<int>(mat[0].size())},
         original_row_{static_cast<int>(mat.size())} {}
   Matrix(std::string input) {
-    // Matrix<double> s{"|1,2|3,4|"};
-    // Matrix<double> s{"|12,2|3,4|5,6|"};  <---
-    //  Matrix<double> s{"|1,2,3|3,4,5|5,6,7|"};
-
     int rows{};
     int cols{};
     std::vector<T> numbers{};
