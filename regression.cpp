@@ -11,6 +11,7 @@ struct Point {
   T Y;
   bool operator==(Point const& b) { return b.X == X && b.Y == Y; }
 };
+
 template <typename T>
 struct RegressionResultY {
   T A;
@@ -52,6 +53,7 @@ class Regression {
 
     return false;
   }
+
   RegressionResultY<T> fit(T sigma_y = 0) {
     int const N = data_.size();
     T sum_x{};

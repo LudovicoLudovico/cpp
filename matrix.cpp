@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include <ratio>
 #include <vector>
 
 #include "doctest.h"
@@ -24,6 +23,48 @@ class Matrix {
         n_col_{static_cast<int>(mat[0].size())},
         original_col_{static_cast<int>(mat[0].size())},
         original_row_{static_cast<int>(mat.size())} {}
+  Matrix(std::string input) {
+    // Matrix<double> s{"|1,2|3,4|"};
+    // Matrix<double> s{"|12,2|3,4|5,6|"};  <---
+    //  Matrix<double> s{"|1,2,3|3,4,5|5,6,7|"};
+
+    int rows{};
+    int cols{};
+    std::vector<T> numbers{};
+    for (size_t i = 0; i < input.length() - 1; i++) {
+      if (input[i] == ',' || input[i] == '|') {
+        ++cols;
+        if (input[i] == '|') {
+          ++rows;
+        }
+      } else {
+        std::string tmp = "";
+        while (input[i] != ',' && input[i] != '|') {
+          tmp += input[i];
+          ++i;
+        }
+        --i;
+        numbers.push_back(std::stod(tmp));
+      }
+    }
+
+    cols /= rows;
+    original_row_ = rows;
+    n_row_ = rows;
+    original_col_ = cols;
+    n_col_ = cols;
+
+    int num_counter = 0;
+    for (int i = 0; i != rows; i++) {
+      auto row = std::vector<T>(cols);
+      matrix_.push_back(row);
+      for (int j = 0; j != cols; j++) {
+        matrix_[i][j] = numbers[num_counter];
+        ++num_counter;
+      }
+    }
+  }
+
   int getRow() const { return n_row_; }
   int getCol() const { return n_col_; }
   auto getMatrix() const { return matrix_; }
@@ -38,6 +79,7 @@ class Matrix {
     }
     std::cout << '\n';
   }
+
   T trace() const {
     if (n_col_ != n_row_)
       throw std::runtime_error{"Can't calculate trace on non-square matrix"};
@@ -338,7 +380,8 @@ auto operator/(Matrix<T>& a, R scalar) {
 }
 
 TEST_CASE("Testing Matrix") {
-  Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+  // Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+  Matrix<int> a{"|1,2,3,5|4,5,6,8|7,8,9,10|1,-3,5,6|"};
 
   SUBCASE("Calculating Trace") { CHECK(a.trace() == 21); }
   SUBCASE("Testing == operator") {
