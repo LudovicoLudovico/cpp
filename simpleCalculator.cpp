@@ -15,7 +15,7 @@ int main() {
 
     if (!std::cin.good()) throw std::runtime_error{"Invalid Second Operand"};
 
-    std::cout << "Operator ( + , - , / , * , %) ";
+    std::cout << "Operator ( + , - , / , *) ";
     char operation;
     std::cin >> operation;
 
@@ -32,9 +32,6 @@ int main() {
         break;
       case '*':
         result = a * b;
-        break;
-      case '%':
-        result = a % b;
         break;
       default:
         std::string error = "Invalid Operator: ";
