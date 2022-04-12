@@ -6,7 +6,6 @@ struct PPState {
   double m{};
   double x{};
   double v{};
-  void print() { std::cout << m << '-' << x << '-' << v << '\n'; }
 };
 
 class Hooke {
