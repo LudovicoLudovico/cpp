@@ -1,0 +1,9 @@
+*
+!*.cpp
+!*.hpp
+!*.h
+!/exercises
+!lab3/
+!.gitignore
+!/tests
+!/lab5

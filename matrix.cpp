@@ -311,6 +311,22 @@ auto operator+(Matrix<T> const& a, Matrix<R> const& b) {
 }
 
 template <typename T, typename R>
+void operator+=(Matrix<R>& a, Matrix<T> const& b) {
+  if (a.getCol() != b.getCol() || a.getRow() != b.getRow())
+    throw std::runtime_error{"Can't perform operation on the given matrices"};
+
+  auto matA = a.getMatrix();
+  auto matB = b.getMatrix();
+
+  for (int i = 0; i != a.getRow(); i++) {
+    for (int j = 0; j != a.getCol(); j++) {
+      matA[i][j] += matB[i][j];
+    }
+  }
+  a = Matrix{matA};
+}
+
+template <typename T, typename R>
 auto operator-(Matrix<T>& a, Matrix<R> const& b) {
   if (a.getCol() != b.getCol() || a.getRow() != b.getRow())
     throw std::runtime_error{"Can't perform operation on the given matrices"};
@@ -324,6 +340,21 @@ auto operator-(Matrix<T>& a, Matrix<R> const& b) {
     }
   }
   return Matrix{matA};
+}
+template <typename T, typename R>
+void operator-=(Matrix<T>& a, Matrix<R> const& b) {
+  if (a.getCol() != b.getCol() || a.getRow() != b.getRow())
+    throw std::runtime_error{"Can't perform operation on the given matrices"};
+
+  auto matA = a.getMatrix();
+  auto matB = b.getMatrix();
+
+  for (int i = 0; i != a.getRow(); i++) {
+    for (int j = 0; j != a.getCol(); j++) {
+      matA[i][j] -= matB[i][j];
+    }
+  }
+  a = Matrix{matA};
 }
 
 template <typename T, typename R>
@@ -375,6 +406,26 @@ auto operator/(Matrix<T>& a, R scalar) {
   return Matrix{matA};
 }
 
+template <typename T, typename R>
+void operator/=(Matrix<T>& a, R scalar) {
+  auto matA = a.getMatrix();
+
+  for (auto& row : matA) {
+    for (int j = 0; j != a.getCol(); j++) {
+      row[j] /= scalar;
+    }
+  }
+
+  a = Matrix{matA};
+}
+
+template <typename T>
+auto operator^(Matrix<T>& a, int exp) {
+  Matrix<T> b = a;
+  for (int i = 0; i < exp - 1; ++i) b = b * a;
+  return b;
+}
+
 // Testing pull request
 TEST_CASE("Testing Matrix") {
   // Matrix<int> a{{{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
@@ -397,6 +448,30 @@ TEST_CASE("Testing Matrix") {
                                   {14, 16, 18, 20},
                                   {2, -6, 10, 12}}});
   }
+  SUBCASE("Testing += operator") {
+    Matrix<double> b{
+        {{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+    b += a;
+    CHECK((b) == Matrix<int>{{{2, 4, 6, 10},
+                              {8, 10, 12, 16},
+                              {14, 16, 18, 20},
+                              {2, -6, 10, 12}}});
+  }
+  SUBCASE("Testing - operator") {
+    Matrix<double> b{
+        {{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+    CHECK(
+        (a - b) ==
+        Matrix<int>{{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}});
+  }
+  SUBCASE("Testing -= operator") {
+    Matrix<double> b{
+        {{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
+
+    a -= b;
+    CHECK((a) == Matrix<int>{
+                     {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}});
+  }
   SUBCASE("Testing - operator") {
     Matrix<double> b{
         {{1, 2, 3, 5}, {4, 5, 6, 8}, {7, 8, 9, 10}, {1, -3, 5, 6}}};
@@ -415,6 +490,10 @@ TEST_CASE("Testing Matrix") {
   }
   SUBCASE("Testing * scalar operator") { CHECK((a * 2) == (a + a)); }
   SUBCASE("Testing / scalar operator") { CHECK((a / 1) == a); }
+  SUBCASE("Testing /= scalar operator") {
+    a /= 1;
+    CHECK(a == a);
+  }
   SUBCASE("Testing isSymmetric") {
     CHECK(!a.isSymmetric());
 
@@ -443,5 +522,11 @@ TEST_CASE("Testing Matrix") {
 
     CHECK(Matrix<int>{{{1, 2, -3}, {0, 1, 2}, {0, 0, 1}}}.invert() ==
           Matrix<int>{{{1, -2, 7}, {0, 1, -2}, {0, 0, 1}}});
+  }
+  SUBCASE("Elevating to power") {
+    Matrix<int> a{{{1, 2}, {3, 4}}};
+    Matrix<int> b = a * a;
+
+    CHECK((a ^ 3) == (b * a));
   }
 }
